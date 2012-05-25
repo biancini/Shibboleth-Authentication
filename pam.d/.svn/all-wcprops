@@ -1,0 +1,11 @@
+K 25
+svn:wc:ra_dav:version-url
+V 39
+/svn/garrbox/!svn/ver/30/pam_http/pam.d
+END
+check_user
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/garrbox/!svn/ver/35/pam_http/pam.d/check_user
+END
