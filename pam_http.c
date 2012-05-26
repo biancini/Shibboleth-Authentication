@@ -154,7 +154,7 @@ static int geturl(const char *url, const char *username, const char *password, c
   userpass = malloc(strlen(username)+strlen(password)+2);
   sprintf(userpass, "%s:%s", username, password);
   #ifdef DEBUG
-  fprintf(stderr, "Basich authentication string: %s\n", userpass);
+  fprintf(stderr, "Basic authentication string: %s\n", userpass);
   #endif
 
   if (!userpass) goto cleanup;
