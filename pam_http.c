@@ -94,8 +94,17 @@ size_t headercallback(void *ptr, size_t size, size_t nmemb, void *userdata)
   char headcookie[] = "Set-Cookie";
   if (strcasestr(pstr, headcookie))
   {
-    char *newstr = (char *)malloc(size*nmemb+1);
+    int len = 0;
+    for (i = 0; pstr[i]; i++)
+    {
+      if (write == -1 && i > 0 && pstr[i-1] == ' ') write = 0;
+      if (write == 0 && pstr[i] == ';') write = 1;
+      if (write == 0) len++;
+    }
+
+    char *newstr = (char *)malloc(len+1);
     int eqsign = -1;
+    write = -1;
     for (i = 0; pstr[i]; i++)
     {
       if (write == -1 && i > 0 && pstr[i-1] == ' ') write = 0;
@@ -173,8 +182,7 @@ static int geturl(const char *url, const char *username, const char *password, c
   // connection?)
   curl_easy_setopt(hCurl, CURLOPT_RANDOM_FILE, "/dev/urandom");
 
-  int ssl = strncmp(sslcheck, "true", 10);
-  if (ssl == 0)
+  if (strcasestr(sslcheck, "true"))
   {
     curl_easy_setopt(hCurl, CURLOPT_SSL_VERIFYPEER, 1);
     curl_easy_setopt(hCurl, CURLOPT_SSL_VERIFYHOST, 2);
@@ -239,7 +247,7 @@ static int geturl(const char *url, const char *username, const char *password, c
     if (curl_easy_getinfo(hCurl, CURLINFO_RESPONSE_CODE, &http_code) == CURLE_OK)
     {
       #ifdef DEBUG
-      fprintf(stderr, "Response code: %1u\n", http_code);
+      fprintf(stderr, "Response code: %ld\n", http_code);
       #endif
 
       if (http_code == 401) {
@@ -262,15 +270,6 @@ static int geturl(const char *url, const char *username, const char *password, c
   }
   while (curl_easy_getinfo(hCurl, CURLINFO_REDIRECT_URL, &new_url) == CURLE_OK && new_url != NULL);
 
-  #ifdef DEBUG
-  char *eff_url = NULL;
- 
-  fprintf(stderr, "Curl call result: %d\n", hResult);
-  if (curl_easy_getinfo(hCurl, CURLINFO_EFFECTIVE_URL, &eff_url) == CURLE_OK)
-    fprintf(stderr, "Effective URL: %s\n", eff_url);
-  //free(eff_url);
-  #endif
-
  cleanup:
   curl_easy_cleanup(hCurl);
   curl_global_cleanup();
@@ -282,9 +281,22 @@ static int geturl(const char *url, const char *username, const char *password, c
   return hResult == 0;
 }
 
+static char *getsessvalue(const char *key)
+{
+  SESSION *cursor = session;
+  while (cursor)
+  {
+    if (strcasestr(cursor->key, key)) return cursor->value;
+    cursor = cursor->next;
+  }
+
+  return NULL;
+}
+
 /* pam arguments are normally of the form name=value.  This gets the
  * 'value' corresponding to the passed 'name' from the argument list. */
-static const char *getarg(const char *name, int argc, const char **argv) {
+static const char *getarg(const char *name, int argc, const char **argv)
+{
   int len = strlen(name);
   while (argc)
   {
@@ -298,66 +310,97 @@ static const char *getarg(const char *name, int argc, const char **argv) {
   return 0;
 }
 
-PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
+const char *get_password(pam_handle_t *pamh, const char *username, int flags, int use_first_pass, int try_first_pass)
 {
-  struct pam_conv *item;
+  int rc = 0;
+  char *password = NULL;
   struct pam_message msg;
   const struct pam_message *msgp;
   struct pam_response *respp;
-  const char *username;
-  const char *cafile = getarg("cafile", argc, argv);  /* possibly NULL */
-  const char *sslcheck = getarg("sslcheck", argc, argv);  /* possible NULL */
-  const char *url = getarg("url", argc, argv);
-  int rv = PAM_SUCCESS;
-  char *lsslcheck;
+  struct pam_conv *item;
   char *message;
   int i = 0;
 
-  if (!url) return PAM_AUTH_ERR;
-
-  lsslcheck = (char *) malloc(strlen(sslcheck));
-  for (i = 0; sslcheck[i]; i++)
-    lsslcheck[i] = tolower(sslcheck[i]);
-
-  #ifdef DEBUG
-  fprintf(stderr, "Calling auth function with cafile=%s and sslcheck=%s.\n", cafile, lsslcheck);
-  #endif
-  
-  msgp = &msg;
+  rc = pam_get_item (pamh, PAM_AUTHTOK, (const void **) &password);
+  if (rc == PAM_SUCCESS && (use_first_pass || try_first_pass)) return password;
 
   if ((flags & PAM_SILENT) == PAM_SILENT)
   {
-    syslog(LOG_AUTHPRIV, "PAM_SILENT enabled but password requested, unable to continue.\n");
-    return PAM_AUTH_ERR;
+    syslog(LOG_ERR, "PAM_SILENT enabled but password requested, unable to continue.\n");
+    return NULL;
   }
 
   if (pam_get_item(pamh, PAM_CONV, (const void**)&item) != PAM_SUCCESS)
   {
-    syslog(LOG_AUTHPRIV, "Couldn't get pam_conv.\n");
-    return PAM_AUTH_ERR;
+    syslog(LOG_ERR, "Couldn't get pam_conv.\n");
+    return NULL;
   }
 
-  if (pam_get_user(pamh, &username, 0) != PAM_SUCCESS)
-  {
-    syslog(LOG_AUTHPRIV, "Couldn't get username.\n");
-    return PAM_AUTH_ERR;
-  }
+  msgp = &msg;
 
   message = (char *) malloc(strlen(username) + 14);
-  for (i = 0; i < strlen(username) + 14; i++)
-    message[i] = '\0';
+  for (i = 0; i < strlen(username) + 14; i++) message[i] = '\0';
   sprintf(message, "%s's password: ", username);
 
   msg.msg_style = PAM_PROMPT_ECHO_OFF;
   msg.msg = message;
 
   item->conv(1, &msgp, &respp, item->appdata_ptr);
+  return respp[0].resp;
+}
 
-  if (!geturl(url, (char*)username, respp[0].resp, cafile, lsslcheck))
-      rv = PAM_AUTH_ERR;
+PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
+{
+  const char *username = NULL;
+  const char *password = NULL;
+  const char *cafile = getarg("cafile", argc, argv);
+  const char *sslcheck = getarg("sslcheck", argc, argv);
+  const char *sess_username = getarg("sess_username", argc, argv);
+  const char *url = getarg("url", argc, argv);
+  int use_first_pass = 0, try_first_pass = 0;
+  int rv = PAM_AUTH_ERR;
+  int i = 0;
 
-  memset(respp[0].resp, '\0', strlen(respp[0].resp));
-  free(respp);
+  if (!url) return PAM_AUTH_ERR;
+
+  for (i = 0; i < argc; i++)
+  {
+    if (!strcmp (argv[i], "use_first_pass"))
+      use_first_pass = 1;
+    else if (!strcmp (argv[i], "try_first_pass"))
+      try_first_pass = 1;
+  }
+
+  #ifdef DEBUG
+  fprintf(stderr, "Calling auth function with cafile=%s and sslcheck=%s.\n", cafile, sslcheck);
+  #endif
+  
+  if (pam_get_user(pamh, &username, 0) != PAM_SUCCESS)
+  {
+    syslog(LOG_ERR, "Couldn't get username.\n");
+    return PAM_AUTH_ERR;
+  }
+
+  password = get_password(pamh, username, flags, use_first_pass, try_first_pass);
+  if (password == NULL)
+  {
+    syslog(LOG_ERR, "Couldn't get password.\n");
+    return PAM_AUTH_ERR;
+  }
+
+  if (geturl(url, (char*)username, password, cafile, sslcheck))
+  {
+    rv = PAM_SUCCESS;
+
+    if (sess_username != NULL)
+    {
+      char *uname = getsessvalue(sess_username);
+      pam_set_item(pamh, PAM_USER, uname);
+    }
+  }
+
+  memset((void *)password, '\0', strlen(password));
+  free((void *)password);
 
   return rv;
 }
@@ -365,7 +408,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
 PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
   const char *message = "Unable to set user credentials on Shibboleth. Please contacy the IdP administrator for this task.\n";
-  syslog(LOG_AUTHPRIV, message);
+  syslog(LOG_ERR, message);
 
   if ((flags & PAM_SILENT) != PAM_SILENT)
   {
@@ -376,7 +419,7 @@ PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const cha
 
     if (pam_get_item(pamh, PAM_CONV, (const void**)&item) != PAM_SUCCESS)
     {
-      syslog(LOG_AUTHPRIV, "Couldn't get pam_conv\n");
+      syslog(LOG_ERR, "Couldn't get pam_conv\n");
       return PAM_AUTH_ERR;
     }
 
@@ -398,13 +441,8 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc, const c
   fprintf(stderr, "Checking authetication rights in session.\n");
   #endif
 
-  SESSION *cursor = session;
-  while (cursor)
-  {
-    if (strcasestr(cursor->key, key) && strcasestr(cursor->value, value)) return PAM_SUCCESS;
-    cursor = cursor->next;
-  }
-
+  char *authed = getsessvalue(key);
+  if (authed != NULL && strcasestr(authed, value)) return PAM_SUCCESS;
   return PAM_AUTH_ERR;
 }
 
@@ -421,7 +459,7 @@ PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags, int argc, con
 PAM_EXTERN int pam_sm_chauthtok(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
   const char *message = "Unable to set user credentials on Shibboleth. Please contacy the IdP administrator for this task.\n";
-  syslog(LOG_AUTHPRIV, message);
+  syslog(LOG_ERR, message);
 
   if ((flags & PAM_SILENT) != PAM_SILENT)
   {
@@ -431,7 +469,7 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t *pamh, int flags, int argc, const c
 
     if (pam_get_item(pamh, PAM_CONV, (const void**)&item) != PAM_SUCCESS)
     {
-      syslog(LOG_AUTHPRIV, "Couldn't get pam_conv\n");
+      syslog(LOG_ERR, "Couldn't get pam_conv\n");
       return PAM_AUTH_ERR;
     }
 
