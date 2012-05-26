@@ -28,22 +28,25 @@ static size_t nop_wf(void* a, size_t x, size_t y, void* b) { return x * y; }
 
 char **split_str(char *str, const char *delimiters)
 {
-  char *token; 
   char **tokenArray;
-  int count = 0;
-  token = (char *) strtok(str, delimiters);
+  int count = 1;
+  int i = 0;
+
+  if (strstr(str, delimiters) == NULL) return NULL;
   tokenArray = (char**) malloc(1 * sizeof(char*));
+  tokenArray[0] = str;
 
-  if (token == NULL) return NULL;
-
-  while (token != NULL)
+  for (i = 0; str[i]; i++)
   {
-    tokenArray[count] = (char*) malloc(sizeof(token));
-    strcpy(tokenArray[count], token);
-    count++;
-    tokenArray = (char **) realloc(tokenArray, count*sizeof(char *));
-    token = (char *) strtok(NULL, delimiters); // Get the next token     
-  } 
+    if (str[i] == delimiters[0])
+    {
+       tokenArray = (char **) realloc(tokenArray, (count+2)*sizeof(char *));
+       str[i] = '\0';
+       tokenArray[count] = &str[i+1];
+       tokenArray[count+1] = NULL;
+       count++;
+    }
+  }
 
   return tokenArray;
 }
@@ -54,33 +57,24 @@ size_t bodycallback(char *ptr, size_t size, size_t nmemb, void *userdata)
   strncpy(pstr, ptr, size*nmemb);
   pstr[size*nmemb] = '\0';
 
-  #ifdef DEBUG
-  fprintf(stderr, "-> %s\n", pstr);
-  #endif
-
-  return nmemb*size;
-
   char **rows = split_str(pstr, "\n");
   int i = 0;
   for (i = 0; rows[i]; i++)
   {
+    if (strstr(rows[i], "="))
+    {
+      char **array = split_str(rows[i], "=");
 
-  if (strstr(rows[i], "="))
-  {
-    char **array = split_str(rows[i], "=");
-    fprintf(stderr, "----> [%s] => %s\n", array[0], array[1]);
+      #ifdef DEBUG
+      fprintf(stderr, "Read session value: [%s] => %s\n", array[0], array[1]);
+      #endif
 
-    #ifdef DEBUG
-    fprintf(stderr, "Read session value: [%s] => %s\n", array[0], array[1]);
-    #endif
-
-    SESSION *cursor = session;
-    SESSION *cursess = (SESSION *) malloc(sizeof(SESSION));
-    cursess->key = array[0];
-    cursess->value = array[1];
-    cursess->next = session;
-    session = cursess;
-  }
+      SESSION *cursess = (SESSION *) malloc(sizeof(SESSION));
+      cursess->key = array[0];
+      cursess->value = array[1];
+      cursess->next = session;
+      session = cursess;
+    }
   }
 
   return nmemb*size;
@@ -113,7 +107,8 @@ size_t headercallback(void *ptr, size_t size, size_t nmemb, void *userdata)
 
     int found = 1;
     struct curl_slist *cursor = cookies;
-    while (cursor) {
+    while (cursor)
+    {
       if (eqsign > 0)
       {
         newstr[eqsign] = '\0';
@@ -201,7 +196,8 @@ static int geturl(const char *url, const char *username, const char *password, c
     if (cookies != NULL)
     {
       struct curl_slist *cursor	= cookies;
-      while (cursor) {
+      while (cursor)
+      {
         if (passcookies == NULL)
         {
           passcookies = (char *)malloc(strlen(cursor->data)+1);
@@ -290,10 +286,10 @@ static int geturl(const char *url, const char *username, const char *password, c
  * 'value' corresponding to the passed 'name' from the argument list. */
 static const char *getarg(const char *name, int argc, const char **argv) {
   int len = strlen(name);
-  while (argc) {
-    if (strlen(*argv) > len && 
-	!strncmp(name, *argv, len) && 
-	(*argv)[len] == '=') {
+  while (argc)
+  {
+    if (strlen(*argv) > len && !strncmp(name, *argv, len) && (*argv)[len] == '=')
+    {
       return *argv + len + 1;  /* 1 for the = */
     }
     argc--;
@@ -395,10 +391,21 @@ PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const cha
 
 PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
-  // This function performs the task of establishing whether the user is permitted to gain access at this time.
-  // It should be understood that the user has previously been validated by an authentication module.
-  // This function checks for other things. Such things might be: the time of day or the date, the terminal line, remote hostname, etc. .
-  return PAM_SUCCESS;
+  const char *key = "authenticated";
+  const char *value = "true";
+
+  #ifdef DEBUG
+  fprintf(stderr, "Checking authetication rights in session.\n");
+  #endif
+
+  SESSION *cursor = session;
+  while (cursor)
+  {
+    if (strcasestr(cursor->key, key) && strcasestr(cursor->value, value)) return PAM_SUCCESS;
+    cursor = cursor->next;
+  }
+
+  return PAM_AUTH_ERR;
 }
 
 PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, const char **argv)
