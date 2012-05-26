@@ -15,9 +15,76 @@
 #include <curl/types.h>
 #include <curl/easy.h>
 
-char *cookies = NULL;
+struct curl_slist *cookies = NULL;
+typedef struct _SESSION
+{
+  char *key;
+  char *value;
+  struct _SESSION *next;
+} SESSION;
+SESSION *session = NULL;
 
 static size_t nop_wf(void* a, size_t x, size_t y, void* b) { return x * y; }
+
+char **split_str(char *str, const char *delimiters)
+{
+  char *token; 
+  char **tokenArray;
+  int count = 0;
+  token = (char *) strtok(str, delimiters);
+  tokenArray = (char**) malloc(1 * sizeof(char*));
+
+  if (token == NULL) return NULL;
+
+  while (token != NULL)
+  {
+    tokenArray[count] = (char*) malloc(sizeof(token));
+    strcpy(tokenArray[count], token);
+    count++;
+    tokenArray = (char **) realloc(tokenArray, count*sizeof(char *));
+    token = (char *) strtok(NULL, delimiters); // Get the next token     
+  } 
+
+  return tokenArray;
+}
+
+size_t bodycallback(char *ptr, size_t size, size_t nmemb, void *userdata)
+{
+  char* pstr = (char *)malloc(size*nmemb+1);
+  strncpy(pstr, ptr, size*nmemb);
+  pstr[size*nmemb] = '\0';
+
+  #ifdef DEBUG
+  fprintf(stderr, "-> %s\n", pstr);
+  #endif
+
+  return nmemb*size;
+
+  char **rows = split_str(pstr, "\n");
+  int i = 0;
+  for (i = 0; rows[i]; i++)
+  {
+
+  if (strstr(rows[i], "="))
+  {
+    char **array = split_str(rows[i], "=");
+    fprintf(stderr, "----> [%s] => %s\n", array[0], array[1]);
+
+    #ifdef DEBUG
+    fprintf(stderr, "Read session value: [%s] => %s\n", array[0], array[1]);
+    #endif
+
+    SESSION *cursor = session;
+    SESSION *cursess = (SESSION *) malloc(sizeof(SESSION));
+    cursess->key = array[0];
+    cursess->value = array[1];
+    cursess->next = session;
+    session = cursess;
+  }
+  }
+
+  return nmemb*size;
+}
 
 size_t headercallback(void *ptr, size_t size, size_t nmemb, void *userdata)
 {
@@ -34,23 +101,44 @@ size_t headercallback(void *ptr, size_t size, size_t nmemb, void *userdata)
   if (strcasestr(pstr, headcookie))
   {
     char *newstr = (char *)malloc(size*nmemb+1);
+    int eqsign = -1;
     for (i = 0; pstr[i]; i++)
     {
       if (write == -1 && i > 0 && pstr[i-1] == ' ') write = 0;
       if (write == 0 && pstr[i] == ';') write = 1;
       if (write == 0) newstr[j++] = pstr[i];
+      if (eqsign == -1 && newstr[j-1] == '=') eqsign = j-1;
     }
     newstr[j] = '\0';
 
-    if (cookies == NULL || strstr(cookies, newstr) == NULL)
+    int found = 1;
+    struct curl_slist *cursor = cookies;
+    while (cursor) {
+      if (eqsign > 0)
+      {
+        newstr[eqsign] = '\0';
+        if (strcasestr(cursor->data, newstr))
+        {
+          free(cursor->data);
+          newstr[eqsign] = '=';
+          cursor->data = newstr;
+          found = 0;
+        }
+        else
+        {
+          newstr[eqsign] = '=';
+        }
+      }
+
+      cursor = cursor->next;
+    }
+
+    if (found != 0)
     {
-      char *oldcookies = cookies;
-      cookies = (char *)malloc(((oldcookies != NULL) ? strlen(oldcookies) : 0)+strlen(newstr)+2);
-      for (i = 0; i < (oldcookies && strlen(oldcookies))+(strlen(newstr))+2; i++) { cookies[i] = '\0'; }
-      if (oldcookies == NULL || strlen(oldcookies) == 0) sprintf(cookies, "%s", newstr);
-      else sprintf(cookies, "%s;%s", oldcookies, newstr);
-      if (strlen(cookies) == 0) cookies = NULL;
-      if (oldcookies != NULL && strlen(oldcookies) > 0) free(oldcookies);
+      struct curl_slist *curcookie = (struct curl_slist *) malloc(sizeof(struct curl_slist));
+      curcookie->data = newstr;
+      curcookie->next = cookies;
+      cookies = curcookie;
     }
   }
 
@@ -112,11 +200,25 @@ static int geturl(const char *url, const char *username, const char *password, c
     char *passcookies = NULL;
     if (cookies != NULL)
     {
-      passcookies = (char *)malloc(strlen(cookies) + 1);
-      strcpy(passcookies, cookies);
-      passcookies[strlen(cookies)] = '\0';
-      free(cookies);
-      cookies = NULL;
+      struct curl_slist *cursor	= cookies;
+      while (cursor) {
+        if (passcookies == NULL)
+        {
+          passcookies = (char *)malloc(strlen(cursor->data)+1);
+          strcpy(passcookies, cursor->data);
+          passcookies[strlen(cursor->data)] = '\0';
+        }
+        else
+        {
+          char *oldcookies = passcookies;
+          passcookies = (char *)malloc(strlen(oldcookies)+strlen(cursor->data)+2);
+          sprintf(passcookies, "%s;%s", oldcookies, cursor->data);
+          passcookies[strlen(passcookies)+strlen(cursor->data)+1] = '\0';
+          free(oldcookies);
+        }
+
+        cursor = cursor->next;  
+      }
     }
 
     curl_easy_setopt(hCurl, CURLOPT_COOKIE, passcookies);
@@ -149,6 +251,7 @@ static int geturl(const char *url, const char *username, const char *password, c
         fprintf(stderr, "Adding Basic authentication directives.\n");
         #endif
 
+        curl_easy_setopt(hCurl, CURLOPT_WRITEFUNCTION, bodycallback);
         curl_easy_setopt(hCurl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
         curl_easy_setopt(hCurl, CURLOPT_USERPWD, userpass);
 
