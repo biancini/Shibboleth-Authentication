@@ -20,13 +20,12 @@ static struct pam_conv conv = {
 
 int main(int argc, char *argv[])
 {
-    pam_handle_t *pamh=NULL;
-    int retval;
-    const char *user="nobody";
+    pam_handle_t *pamh = NULL;
+    int retval = 0;
+    const char *user = "nobody";
+    const void *authenticated_user = NULL;
 
-    if(argc == 2) {
-        user = argv[1];
-    }
+    if (argc == 2) user = argv[1];
 
     if(argc > 2) {
         fprintf(stderr, "Usage: check_user [username]\n");
@@ -35,18 +34,16 @@ int main(int argc, char *argv[])
 
     retval = pam_start("check_user", user, &conv, &pamh);
         
-    if (retval == PAM_SUCCESS)
-        retval = pam_authenticate(pamh, 0);    /* is user really user? */
-
-    if (retval == PAM_SUCCESS)
-        retval = pam_acct_mgmt(pamh, 0);       /* permitted access? */
+    if (retval == PAM_SUCCESS) retval = pam_authenticate(pamh, 0);
+    if (retval == PAM_SUCCESS) retval = pam_acct_mgmt(pamh, 0);
+    if (retval == PAM_SUCCESS) retval = pam_get_item(pamh, PAM_USER, &authenticated_user);
 
     /* This is where we have been authorized or not. */
 
     if (retval == PAM_SUCCESS) {
-        fprintf(stdout, "Authenticated\n");
+        fprintf(stdout, "Authenticated (user: %s).\n", (char *)authenticated_user);
     } else {
-        fprintf(stdout, "Not Authenticated: %s\n", pam_strerror(pamh, retval));
+        fprintf(stdout, "Not Authenticated: %s.\n", pam_strerror(pamh, retval));
     }
 
     if (pam_end(pamh,retval) != PAM_SUCCESS) {     /* close Linux-PAM */

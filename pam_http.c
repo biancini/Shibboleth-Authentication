@@ -407,29 +407,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
 
 PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
-  const char *message = "Unable to set user credentials on Shibboleth. Please contacy the IdP administrator for this task.\n";
-  syslog(LOG_ERR, message);
-
-  if ((flags & PAM_SILENT) != PAM_SILENT)
-  {
-    struct pam_conv *item;
-    struct pam_message msg;
-    const struct pam_message *msgp;
-
-
-    if (pam_get_item(pamh, PAM_CONV, (const void**)&item) != PAM_SUCCESS)
-    {
-      syslog(LOG_ERR, "Couldn't get pam_conv\n");
-      return PAM_AUTH_ERR;
-    }
-
-    msgp = &msg;
-    msg.msg_style = PAM_ERROR_MSG;
-    msg.msg = message;
-    item->conv(1, &msgp, NULL, item->appdata_ptr);
-  }
-
-  return PAM_CRED_ERR;
+  return PAM_SUCCESS;
 }
 
 PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc, const char **argv)
@@ -458,7 +436,7 @@ PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags, int argc, con
 
 PAM_EXTERN int pam_sm_chauthtok(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
-  const char *message = "Unable to set user credentials on Shibboleth. Please contacy the IdP administrator for this task.\n";
+  const char *message = "bUnable to set user credentials on Shibboleth. Please contacy the IdP administrator for this task.\n";
   syslog(LOG_ERR, message);
 
   if ((flags & PAM_SILENT) != PAM_SILENT)
