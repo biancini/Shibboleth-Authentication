@@ -292,7 +292,7 @@ enum nss_status _nss_shib_getpwent_r(struct passwd *result, char *buffer, size_t
         #endif
 
         last_rownum_pwd = i;
-        return NSS_STATUS_TRYAGAIN;
+        return NSS_STATUS_SUCCESS;
       }
     }
 
@@ -348,21 +348,27 @@ enum nss_status _nss_shib_getgrent_r(struct group *result, char *buffer, size_t 
         result->gr_name = array[0];
         result->gr_passwd = array[1];
         result->gr_gid = atoi(array[2]);
-        result->gr_mem = split_str(array[3], ",");
+        char **members = split_str(array[3], ",");
+        if (members != NULL) result->gr_mem = members;
+        else
+        {
+          result->gr_mem = (char **)malloc(sizeof(char *));
+          result->gr_mem[0] = NULL;
+        }
 
         #ifdef DEBUG
         fprintf(stderr, "Found item: [grname=%s, gid=%d]\n", array[0], atoi(array[2]));
         #endif
 
         last_rownum_grp = i;
-        return NSS_STATUS_TRYAGAIN;
+        return NSS_STATUS_SUCCESS;
       }
     }
 
     i++;
     cursor = cursor->next;
-  }  
-  fprintf(stderr, "non dovresti esser qui.\n");
+  } 
+ 
   return NSS_STATUS_NOTFOUND;
 }
 
