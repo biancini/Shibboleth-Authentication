@@ -12,20 +12,34 @@
 
 struct curl_slist *cookies = NULL;
 
+void free_cursor(struct curl_slist *cursor)
+{
+  if (cursor->next != NULL) free_cursor(cursor->next);
+  free(cursor);
+}
+
+void free_cookies()
+{
+  if (cookies == NULL) return;
+  free_cursor(cookies);
+}
+
 static size_t nop_wf(void* a, size_t x, size_t y, void* b)
 {
-  return x * y;
+  return x*y;
 }
 
 char **split_str(char *str, const char *delimiters)
 {
-  char **tokenArray;
+  char **tokenArray = (char**) malloc(sizeof(char *));
   int count = 1;
   int i = 0;
 
-  if (strstr(str, delimiters) == NULL) return NULL;
-  tokenArray = (char**) malloc(1 * sizeof(char*));
+  tokenArray[0] = NULL;
+  if (strstr(str, delimiters) == NULL) return tokenArray;
+  tokenArray = (char**) realloc(tokenArray, 2*sizeof(char *));
   tokenArray[0] = str;
+  tokenArray[1] = NULL;
 
   for (i = 0; str[i]; i++)
   {
@@ -49,9 +63,7 @@ size_t headercallback(void *ptr, size_t size, size_t nmemb, void *userdata)
   int write = -1;
   if (ptr == NULL) return -1;
 
-  char* pstr = (char *)malloc(size*nmemb+1);
-  strncpy(pstr, ptr, size*nmemb);
-  pstr[size*nmemb] = '\0';
+  char *pstr = (char *)ptr;
 
   char headcookie[] = "Set-Cookie";
   if (strcasestr(pstr, headcookie))
@@ -193,7 +205,7 @@ int geturl(const char *url, const char *username, const char *password, const ch
     nurl[strlen(new_url)] = '\0';
 
     #ifdef DEBUG
-    fprintf(stderr, "Redirecting to ULR: %s\n", new_url);
+    fprintf(stderr, "Redirecting to URL: %s\n", new_url);
     fprintf(stderr, "Passing the following cookies: %s\n", passcookies);
     #endif
 

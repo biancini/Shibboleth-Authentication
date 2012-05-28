@@ -36,13 +36,16 @@ size_t bodycallback(char *ptr, size_t size, size_t nmemb, void *userdata)
   strncpy(pstr, ptr, size*nmemb);
   pstr[size*nmemb] = '\0';
 
-  char **rows = split_str(pstr, "\n");
   int i = 0;
+  char **rows = split_str(pstr, "\n");
+  
+  if (rows == NULL || rows[0] == NULL) return nmemb*size;
   for (i = 0; rows[i]; i++)
   {
     if (strstr(rows[i], "="))
     {
       char **array = split_str(rows[i], "=");
+      if (array == NULL || array[0] == NULL || array[1] == NULL) return nmemb*size;
 
       #ifdef DEBUG
       fprintf(stderr, "Read session value: [%s] => %s\n", array[0], array[1]);
@@ -165,6 +168,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
     }
   }
 
+  free_cookies();
   memset((void *)password, '\0', strlen(password));
   free((void *)password);
 
@@ -202,7 +206,7 @@ PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags, int argc, con
 
 PAM_EXTERN int pam_sm_chauthtok(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
-  const char *message = "bUnable to set user credentials on Shibboleth. Please contacy the IdP administrator for this task.\n";
+  const char *message = "Unable to set user credentials on Shibboleth. Please contacy the IdP administrator for this task.\n";
   syslog(LOG_ERR, message);
 
   if ((flags & PAM_SILENT) != PAM_SILENT)

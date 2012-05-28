@@ -1,4 +1,8 @@
 CFLAGS += -Werror -Wall
+ARCH := $(shell getconf LONG_BIT)
+LIB_32 := $(shell echo "/lib")
+LIB_64 := $(shell echo "/lib64")
+
 all: check_user pam_http.so libnss_shib.so.2
 
 clean:
@@ -11,5 +15,5 @@ libnss_shib.so.2: libnss_shib.c netcurl.c
 	$(CC) $(CFLAGS) -fPIC -shared -Wl,-soname,libnss_shib.so.2 -Xlinker -x -o $@ libnss_shib.c netcurl.c -lcurl -lconfig
 
 install:
-	cp pam_http.so /lib64/security/pam_http.so
-	cp libnss_shib.so.2 /lib64/libnss_shib.so.2
+	cp pam_http.so $(LIB_$(ARCH))/security/pam_http.so
+	cp libnss_shib.so.2 $(LIB_$(ARCH))/libnss_shib.so.2
