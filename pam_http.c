@@ -33,6 +33,8 @@ char *getsessvalue(const char *key)
 void cleansession(SESSION *cursor)
 {
   if (cursor->next != NULL) cleansession(cursor->next);
+  if (cursor->key != NULL) free(cursor->key);
+  if (cursor->value != NULL) free(cursor->value);
   free(cursor);
 }
 
@@ -65,10 +67,13 @@ size_t bodycallback(char *ptr, size_t size, size_t nmemb, void *userdata)
       #endif
 
       SESSION *cursess = (SESSION *) malloc(sizeof(SESSION));
-      cursess->key = array[0];
-      cursess->value = array[1];
+      cursess->key = (char *) malloc(strlen(array[0])+1);
+      strcpy(cursess->key, array[0]);
+      cursess->value = (char *) malloc(strlen(array[1])+1);
+      strcpy(cursess->value, array[1]);
       cursess->next = session;
       session = cursess;
+      free(array);
     }
   }
 

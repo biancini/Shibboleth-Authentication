@@ -48,10 +48,11 @@ void print_body(BODY *pointer)
 void free_body(BODY *cursor)
 {
   if (cursor->next != NULL) free_body(cursor->next);
+  free(cursor->row);
   free(cursor);
 }
 
-void cleanbody(void)
+void cleanbody()
 {
   if (body != NULL) free_body(body);
   body = NULL;
@@ -135,7 +136,11 @@ size_t bodycallback(char *ptr, size_t size, size_t nmemb, void *userdata)
   char* pstr = (char *)ptr;
 
   char **rows = split_str(pstr, "\n");
-  if (rows == NULL || rows[0] == NULL) return nmemb*size;
+  if (rows == NULL || rows[0] == NULL)
+  {
+    free(rows);
+    return nmemb*size;
+  }
 
   int i = 0;
   for (i = 0; rows[i]; i++)
@@ -145,11 +150,13 @@ size_t bodycallback(char *ptr, size_t size, size_t nmemb, void *userdata)
     #endif
 
     BODY *curbody = (BODY *) malloc(sizeof(BODY));
-    curbody->row = rows[i];
+    curbody->row = (char *) malloc(strlen(rows[i])+1);
+    strcpy(curbody->row, rows[i]);
     curbody->next = body;
     body = curbody;
   }
 
+  free(rows);
   return nmemb*size;
 }
 
@@ -175,23 +182,30 @@ enum nss_status _nss_shib_getpwnam_r(const char *name, struct passwd *result, ch
     {
       if (strcmp(array[0], name) == 0)
       {
-        result->pw_name = array[0];
-        result->pw_passwd = array[1];
+        result->pw_name = (char *)malloc(strlen(array[0])+1);
+        strcpy(result->pw_name, array[0]);
+        result->pw_passwd = (char *)malloc(strlen(array[1])+1);
+        strcpy(result->pw_passwd, array[1]);
         result->pw_uid = atoi(array[2]);
         result->pw_gid = atoi(array[3]);
-        result->pw_gecos = array[4];
-        result->pw_dir = array[5];
-        result->pw_shell = array[6];
+        result->pw_gecos = (char *)malloc(strlen(array[4])+1);
+        strcpy(result->pw_gecos, array[4]);
+        result->pw_dir = (char *)malloc(strlen(array[5])+1);
+        strcpy(result->pw_dir, array[5]);
+        result->pw_shell = (char *)malloc(strlen(array[6])+1);
+        strcpy(result->pw_shell, array[6]);
 
         #ifdef DEBUG
         fprintf(stderr, "Found item for name=%s: [uid=%d, gid=%d]\n", name, atoi(array[2]), atoi(array[3]));
         #endif
 
+        free(array);
         cleanbody();
         return NSS_STATUS_SUCCESS;
       }
     }
 
+    free(array);
     free(cur_row);
     cursor = cursor->next;
   }
@@ -222,23 +236,30 @@ enum nss_status _nss_shib_getpwuid_r(uid_t uid, struct passwd *result, char *buf
     {
       if (atoi(array[2]) == uid)
       {
-        result->pw_name = array[0];
-        result->pw_passwd = array[1];
+        result->pw_name = (char *)malloc(strlen(array[0])+1);
+        strcpy(result->pw_name, array[0]);
+        result->pw_passwd = (char *)malloc(strlen(array[1])+1);
+        strcpy(result->pw_passwd, array[1]);
         result->pw_uid = atoi(array[2]);
         result->pw_gid = atoi(array[3]);
-        result->pw_gecos = array[4];
-        result->pw_dir = array[5];
-        result->pw_shell = array[6];
+        result->pw_gecos = (char *)malloc(strlen(array[4])+1);
+        strcpy(result->pw_gecos, array[4]);
+        result->pw_dir = (char *)malloc(strlen(array[5])+1);
+        strcpy(result->pw_dir, array[5]);
+        result->pw_shell = (char *)malloc(strlen(array[6])+1);
+        strcpy(result->pw_shell, array[6]);
 
         #ifdef DEBUG
         fprintf(stderr, "Found item for uid=%d: [name=%s, gid=%d]\n", uid, array[0], atoi(array[3]));
         #endif
 
+        free(array);
         cleanbody();
         return NSS_STATUS_SUCCESS;
       }
     }
 
+    free(array);
     free(cur_row);
     cursor = cursor->next;
   }
@@ -280,23 +301,30 @@ enum nss_status _nss_shib_getpwent_r(struct passwd *result, char *buffer, size_t
       char **array = split_str(cur_row, ":");
       if (array[0] != NULL)
       {
-        result->pw_name = array[0];
-        result->pw_passwd = array[1];
+        result->pw_name = (char *)malloc(strlen(array[0])+1);
+        strcpy(result->pw_name, array[0]);
+        result->pw_passwd = (char *)malloc(strlen(array[1])+1);
+        strcpy(result->pw_passwd, array[1]);
         result->pw_uid = atoi(array[2]);
         result->pw_gid = atoi(array[3]);
-        result->pw_gecos = array[4];
-        result->pw_dir = array[5];
-        result->pw_shell = array[6];
+        result->pw_gecos = (char *)malloc(strlen(array[4])+1);
+        strcpy(result->pw_gecos, array[4]);
+        result->pw_dir = (char *)malloc(strlen(array[5])+1);
+        strcpy(result->pw_dir, array[5]);
+        result->pw_shell = (char *)malloc(strlen(array[6])+1);
+        strcpy(result->pw_shell, array[6]);
 
         #ifdef DEBUG
         fprintf(stderr, "Found item: [name=%s, uid=%d, gid=%d]\n", array[0], atoi(array[2]), atoi(array[3]));
         #endif
 
+        free(array);
         cleanbody();
         last_rownum_pwd = i;
         return NSS_STATUS_SUCCESS;
       }
 
+      free(array);
       free(cur_row);
     }
 
@@ -351,20 +379,38 @@ enum nss_status _nss_shib_getgrent_r(struct group *result, char *buffer, size_t 
       char **array = split_str(cur_row, ":");
       if (array[0] != NULL)
       {
-        result->gr_name = array[0];
-        result->gr_passwd = array[1];
+        result->gr_name = (char *) malloc(strlen(array[0])+1);
+        strcpy(result->gr_name, array[0]);
+        result->gr_passwd = (char *) malloc(strlen(array[1])+1);
+        strcpy(result->gr_passwd, array[1]);
         result->gr_gid = atoi(array[2]);
-        result->gr_mem = split_str(array[3], ",");
+        result->gr_mem = (char **) malloc(sizeof(char **));
+
+        int j = 0;
+        char **members = split_str(array[3], ",");
+        for (j = 0; ; j++)
+        {
+          result->gr_mem = (char **) realloc(result->gr_mem, (j+1)*sizeof(char *));
+          if (members == NULL || members[j] == NULL)
+          {
+            result->gr_mem[j] = NULL;
+            break;
+          }
+          result->gr_mem[j] = malloc(strlen(members[j])+1);
+          strcpy(result->gr_mem[j], members[j]);
+        }
 
         #ifdef DEBUG
         fprintf(stderr, "Found item: [grname=%s, gid=%d]\n", array[0], atoi(array[2]));
         #endif
 
+        free(array);
         cleanbody();
         last_rownum_grp = i;
         return NSS_STATUS_SUCCESS;
       }
 
+      free(array);
       free(cur_row);
     }
 
@@ -398,20 +444,38 @@ enum nss_status _nss_shib_getgrnam_r(const char *name, struct group *result, cha
     {
       if (strcmp(array[0], name) == 0)
       {
-        result->gr_name = array[0];
-        result->gr_passwd = array[1];
+        result->gr_name = (char *) malloc(strlen(array[0])+1);
+        strcpy(result->gr_name, array[0]);
+        result->gr_passwd = (char *) malloc(strlen(array[1])+1);
+        strcpy(result->gr_passwd, array[1]);
         result->gr_gid = atoi(array[2]);
-        result->gr_mem = split_str(array[3], ",");
+        result->gr_mem = (char **) malloc(sizeof(char **));
+
+        int j = 0;
+        char **members = split_str(array[3], ",");
+        for (j = 0; ;j++)
+        {
+          result->gr_mem = (char **) realloc(result->gr_mem, (j+1)*sizeof(char *));
+          if (members == NULL || members[j] == NULL)
+          {
+            result->gr_mem[j] = NULL;
+            break;
+          }
+          result->gr_mem[j] = malloc(strlen(members[j])+1);
+          strcpy(result->gr_mem[j], members[j]);
+        }
 
         #ifdef DEBUG
         fprintf(stderr, "Found item for grname=%s: [gid=%d]\n", name, atoi(array[2]));
         #endif
 
+        free(array);
         cleanbody();
         return NSS_STATUS_SUCCESS;
       }
     }
 
+    free(array);
     free(cur_row);
     cursor = cursor->next;
   }  
@@ -440,15 +504,32 @@ enum nss_status _nss_shib_getgrgid_r(gid_t gid, struct group *result, char *buff
     char **array = split_str(cur_row, ":");
     if (array[0] != NULL && atoi(array[2]) == gid)
     {
-      result->gr_name = array[0];
-      result->gr_passwd = array[1];
+      result->gr_name = (char *) malloc(strlen(array[0])+1);
+      strcpy(result->gr_name, array[0]);
+      result->gr_passwd = (char *) malloc(strlen(array[1])+1);
+      strcpy(result->gr_passwd, array[1]);
       result->gr_gid = atoi(array[2]);
-      result->gr_mem = split_str(array[3], ",");
+      result->gr_mem = (char **) malloc(sizeof(char **));
+
+      int j = 0;
+      char **members = split_str(array[3], ",");
+      for (j = 0; ;j++)
+      {
+        result->gr_mem = (char **) realloc(result->gr_mem, (j+1)*sizeof(char *));
+        if (members == NULL || members[j] == NULL)
+        {
+          result->gr_mem[j] = NULL;
+          break;
+        }
+        result->gr_mem[j] = malloc(strlen(members[j])+1);
+        strcpy(result->gr_mem[j], members[j]);
+      }
 
       #ifdef DEBUG
       fprintf(stderr, "Found item for gid=%d: [name=%s]\n", gid, array[0]);
       #endif
 
+      free(array);
       cleanbody();
       return NSS_STATUS_SUCCESS;
     }

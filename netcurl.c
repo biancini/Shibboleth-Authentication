@@ -15,35 +15,31 @@ struct curl_slist *cookies = NULL;
 void free_cursor(struct curl_slist *cursor)
 {
   if (cursor->next != NULL) free_cursor(cursor->next);
+  if (cursor->data != NULL) free(cursor->data);
   free(cursor);
 }
 
 void free_cookies()
 {
-  if (cookies == NULL) return;
-  free_cursor(cookies);
-}
-
-static size_t nop_wf(void* a, size_t x, size_t y, void* b)
-{
-  return x*y;
+  if (cookies != NULL) free_cursor(cookies);
+  cookies = NULL;
 }
 
 char **split_str(char *str, const char *delimiters)
 {
-  char **tokenArray = (char**) malloc(sizeof(char *));
+  char **tokenArray = (char **) malloc(sizeof(char *));
   int count = 1;
   int i = 0;
 
   tokenArray[0] = NULL;
-  if (str == NULL || strstr(str, delimiters) == NULL) return tokenArray;
-  tokenArray = (char**) realloc(tokenArray, 2*sizeof(char *));
-  tokenArray[0] = str;
+  if (str == NULL) return tokenArray;
+  tokenArray = (char **) realloc(tokenArray, 2*sizeof(char *));
+  tokenArray[0] = &str[0];
   tokenArray[1] = NULL;
 
   for (i = 0; str[i]; i++)
   {
-    if (str[i] == delimiters[0])
+    if (str[i+1] && str[i] == delimiters[0])
     {
        tokenArray = (char **) realloc(tokenArray, (count+2)*sizeof(char *));
        str[i] = '\0';
@@ -84,7 +80,7 @@ size_t headercallback(void *ptr, size_t size, size_t nmemb, void *userdata)
       if (write == -1 && i > 0 && pstr[i-1] == ' ') write = 0;
       if (write == 0 && pstr[i] == ';') write = 1;
       if (write == 0) newstr[j++] = pstr[i];
-      if (eqsign == -1 && newstr[j-1] == '=') eqsign = j-1;
+      if (eqsign == -1 && j > 0 && j <= len && newstr[j-1] == '=') eqsign = j-1;
     }
     newstr[j] = '\0';
 
@@ -99,13 +95,11 @@ size_t headercallback(void *ptr, size_t size, size_t nmemb, void *userdata)
         {
           free(cursor->data);
           newstr[eqsign] = '=';
-          cursor->data = newstr;
+          cursor->data = (char *)malloc(strlen(newstr)+1);
+          strcpy(cursor->data, newstr);
           found = 0;
         }
-        else
-        {
-          newstr[eqsign] = '=';
-        }
+        else newstr[eqsign] = '=';
       }
 
       cursor = cursor->next;
@@ -114,10 +108,13 @@ size_t headercallback(void *ptr, size_t size, size_t nmemb, void *userdata)
     if (found != 0)
     {
       struct curl_slist *curcookie = (struct curl_slist *) malloc(sizeof(struct curl_slist));
-      curcookie->data = newstr;
+      curcookie->data = (char *) malloc(strlen(newstr)+1);
+      strcpy(curcookie->data, newstr);
       curcookie->next = cookies;
       cookies = curcookie;
     }
+    
+    free(newstr);
   }
 
   return nmemb * size;  
@@ -133,7 +130,6 @@ long __geturl(const char *url, const char *userpass, const char *cafile, const c
   if (!hCurl) return http_code;
 
   curl_easy_setopt(hCurl, CURLOPT_URL, url);
-  curl_easy_setopt(hCurl, CURLOPT_WRITEFUNCTION, nop_wf);
   curl_easy_setopt(hCurl, CURLOPT_NOPROGRESS, 1);
   curl_easy_setopt(hCurl, CURLOPT_FAILONERROR, 1);
 
@@ -152,7 +148,7 @@ long __geturl(const char *url, const char *userpass, const char *cafile, const c
   {
     curl_easy_setopt(hCurl, CURLOPT_SSL_VERIFYPEER, 1);
     curl_easy_setopt(hCurl, CURLOPT_SSL_VERIFYHOST, 2);
-    curl_easy_setopt(hCurl, CURLOPT_CAINFO, cafile);
+    if (cafile != NULL) curl_easy_setopt(hCurl, CURLOPT_CAINFO, cafile);
   }
   else
   {
@@ -162,9 +158,10 @@ long __geturl(const char *url, const char *userpass, const char *cafile, const c
  
   char passcookies[2048];
   passcookies[0] = '\0';
+
   if (cookies != NULL)
   {
-    struct curl_slist *cursor	= cookies;
+    struct curl_slist *cursor = cookies;
     while (cursor)
     {
       if (passcookies[0] != '\0') strcat(passcookies, ";");
@@ -217,11 +214,12 @@ long __geturl(const char *url, const char *userpass, const char *cafile, const c
 int geturl(const char *url, const char *username, const char *password, const char *cafile, const char *sslcheck)
 {
   char *userpass = NULL;
-  long http_code = 0;
   char *url_call = NULL;
   char *url_old = NULL;
+  char *url_new = NULL;
+  long http_code = 0;
 
-  char *url_new = (char *)malloc(strlen(url)+1);
+  url_new = (char *) malloc(strlen(url)+1);
   strcpy(url_new, url);
 
   do
@@ -232,6 +230,8 @@ int geturl(const char *url, const char *username, const char *password, const ch
     url_call = (char *)malloc(strlen(url_new)+1);
     strcpy(url_call, url_new);
     cleanbody();
+
+    free(url_new);
     http_code = __geturl(url_call, NULL, cafile, sslcheck, &url_new);
     free(url_call);
 
@@ -241,14 +241,15 @@ int geturl(const char *url, const char *username, const char *password, const ch
       fprintf(stderr, "Adding Basic authentication directives.\n");
       #endif
 
-      userpass = malloc(strlen(username)+strlen(password)+1);
+      userpass = (char *) malloc(strlen(username)+strlen(password)+2);
       sprintf(userpass, "%s:%s", username, password);
       if (!userpass) goto cleanup;
 
       cleanbody();
       http_code = __geturl(url_old, userpass, cafile, sslcheck, &url_new);
     }
-    else free(url_old);
+
+    free(url_old);
   }
   while (url_new != NULL && strlen(url_new) > 0);
 
