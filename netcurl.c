@@ -39,13 +39,17 @@ char **split_str(char *str, const char *delimiters)
 
   for (i = 0; str[i]; i++)
   {
-    if (str[i+1] && str[i] == delimiters[0])
+    if (str[i] == delimiters[0])
     {
-       tokenArray = (char **) realloc(tokenArray, (count+2)*sizeof(char *));
-       str[i] = '\0';
-       tokenArray[count] = &str[i+1];
-       tokenArray[count+1] = NULL;
-       count++;
+      str[i] = '\0';
+
+      if (str[i+1])
+      {
+        tokenArray = (char **) realloc(tokenArray, (count+2)*sizeof(char *));
+        tokenArray[count] = &str[i+1];
+        tokenArray[count+1] = NULL;
+        count++;
+      }
     }
   }
 

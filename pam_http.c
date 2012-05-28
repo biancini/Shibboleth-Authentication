@@ -23,7 +23,12 @@ char *getsessvalue(const char *key)
   SESSION *cursor = session;
   while (cursor)
   {
-    if (strcasestr(cursor->key, key)) return cursor->value;
+    if (strcasestr(cursor->key, key))
+    {
+      char *sessvalue = (char *) malloc(strlen(cursor->value)+1);
+      strcpy(sessvalue, cursor->value);
+      return sessvalue;
+    }
     cursor = cursor->next;
   }
 
@@ -239,6 +244,7 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, cons
 
 PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
+  cleanbody();
   return PAM_SUCCESS;
 }
 
