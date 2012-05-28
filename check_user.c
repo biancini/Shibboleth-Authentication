@@ -1,13 +1,9 @@
 /*
-  This program was contributed by Shane Watts
-  [modifications by AGM]
-  [more modifications by Kragen Sitaker]
-
   You need to add the following (or equivalent) to the /etc/pam.conf file.
   # check authorization
-  check_user   auth       required     /usr/lib/security/pam_unix_auth.so
-  check_user   account    required     /usr/lib/security/pam_unix_acct.so
- */
+  check_user   auth       required     /usr/lib/security/pam_http.so
+  check_user   account    required     /usr/lib/security/pam_http.so
+*/
 
 #include <security/pam_appl.h>
 #include <security/pam_misc.h>
@@ -40,17 +36,15 @@ int main(int argc, char *argv[])
 
     /* This is where we have been authorized or not. */
 
-    if (retval == PAM_SUCCESS) {
-        fprintf(stdout, "Authenticated (user: %s).\n", (char *)authenticated_user);
-    } else {
-        fprintf(stdout, "Not Authenticated: %s.\n", pam_strerror(pamh, retval));
-    }
+    if (retval == PAM_SUCCESS) fprintf(stdout, "Authenticated (user: %s).\n", (char *)authenticated_user);
+    else fprintf(stdout, "Not Authenticated: %s.\n", pam_strerror(pamh, retval));
 
-    if (pam_end(pamh,retval) != PAM_SUCCESS) {     /* close Linux-PAM */
+    if (pam_end(pamh,retval) != PAM_SUCCESS)
+    {
         pamh = NULL;
         fprintf(stderr, "check_user: failed to release authenticator\n");
         exit(1);
     }
 
-    return ( retval == PAM_SUCCESS ? 0:1 );       /* indicate success */
+    return (retval == PAM_SUCCESS ? 0 : 1);
 }

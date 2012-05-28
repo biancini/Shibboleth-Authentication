@@ -18,8 +18,6 @@
 #include "netcurl.h"
 
 BODY *body = NULL;
-BODY *body_pwd = NULL;
-BODY *body_grp = NULL;
 int last_rownum_pwd = -1;
 int last_rownum_grp = -1;
 
@@ -51,6 +49,12 @@ void free_body(BODY *cursor)
 {
   if (cursor->next != NULL) free_body(cursor->next);
   free(cursor);
+}
+
+void cleanbody(void)
+{
+  if (body != NULL) free_body(body);
+  body = NULL;
 }
 
 static void readconfig()
@@ -123,7 +127,6 @@ static void readconfig()
     #endif
   }
 
-  //if (val != NULL) free((void *)val);
   config_destroy(&cfg); 
 }
 
@@ -132,6 +135,8 @@ size_t bodycallback(char *ptr, size_t size, size_t nmemb, void *userdata)
   char* pstr = (char *)ptr;
 
   char **rows = split_str(pstr, "\n");
+  if (rows == NULL || rows[0] == NULL) return nmemb*size;
+
   int i = 0;
   for (i = 0; rows[i]; i++)
   {
@@ -155,18 +160,16 @@ enum nss_status _nss_shib_getpwnam_r(const char *name, struct passwd *result, ch
   #endif
 
   readconfig();
-  char *newurl = (char *) malloc(sizeof(char)*(strlen(url)+8));
+  char newurl[1024];
   sprintf(newurl, "%s?passwd", url);
-  if (!geturl(newurl, username, password, cafile, sslcheck)) { free(newurl); return NSS_STATUS_UNAVAIL; }
-  free(newurl);
-  body_pwd = body; body = NULL;
-  if (body_pwd == NULL) return NSS_STATUS_UNAVAIL;
+  if (!geturl(newurl, username, password, cafile, sslcheck)) return NSS_STATUS_UNAVAIL;
+  if (body == NULL) return NSS_STATUS_UNAVAIL;
 
-  BODY *cursor = body_pwd;
+  BODY *cursor = body;
   while (cursor)
   {
     char *cur_row = (char *)malloc(strlen(cursor->row)+1);
-    memcpy(cur_row, cursor->row, strlen(cursor->row)+1);
+    strcpy(cur_row, cursor->row);
     char **array = split_str(cur_row, ":");
     if (array[0] != NULL)
     {
@@ -184,8 +187,7 @@ enum nss_status _nss_shib_getpwnam_r(const char *name, struct passwd *result, ch
         fprintf(stderr, "Found item for name=%s: [uid=%d, gid=%d]\n", name, atoi(array[2]), atoi(array[3]));
         #endif
 
-        free_cookies();
-        free_body(body_pwd);
+        cleanbody();
         return NSS_STATUS_SUCCESS;
       }
     }
@@ -194,8 +196,7 @@ enum nss_status _nss_shib_getpwnam_r(const char *name, struct passwd *result, ch
     cursor = cursor->next;
   }
 
-  free_cookies();
-  free_body(body_pwd);
+  cleanbody();
   return NSS_STATUS_NOTFOUND;
 }
 
@@ -206,18 +207,16 @@ enum nss_status _nss_shib_getpwuid_r(uid_t uid, struct passwd *result, char *buf
   #endif
 
   readconfig();
-  char *newurl = (char *) malloc(sizeof(char)*(strlen(url)+8));
+  char newurl[1024];
   sprintf(newurl, "%s?passwd", url);
-  if (!geturl(newurl, username, password, cafile, sslcheck)) { free(newurl); return NSS_STATUS_UNAVAIL; }
-  free(newurl);
-  body_pwd = body; body = NULL;
-  if (body_pwd == NULL) return NSS_STATUS_UNAVAIL;
+  if (!geturl(newurl, username, password, cafile, sslcheck)) return NSS_STATUS_UNAVAIL;
+  if (body == NULL) return NSS_STATUS_UNAVAIL;
 
-  BODY *cursor = body_pwd;
+  BODY *cursor = body;
   while (cursor)
   {
     char *cur_row = (char *)malloc(strlen(cursor->row)+1);
-    memcpy(cur_row, cursor->row, strlen(cursor->row)+1);
+    strcpy(cur_row, cursor->row);
     char **array = split_str(cur_row, ":");
     if (array[0] != NULL)
     {
@@ -232,11 +231,10 @@ enum nss_status _nss_shib_getpwuid_r(uid_t uid, struct passwd *result, char *buf
         result->pw_shell = array[6];
 
         #ifdef DEBUG
-        fprintf(stderr, "Found item for uid=d%d: [name=%s, gid=%d]\n", uid, array[0], atoi(array[3]));
+        fprintf(stderr, "Found item for uid=%d: [name=%s, gid=%d]\n", uid, array[0], atoi(array[3]));
         #endif
 
-        free_cookies();
-        free_body(body_pwd);
+        cleanbody();
         return NSS_STATUS_SUCCESS;
       }
     }
@@ -245,8 +243,7 @@ enum nss_status _nss_shib_getpwuid_r(uid_t uid, struct passwd *result, char *buf
     cursor = cursor->next;
   }
 
-  free_cookies();
-  free_body(body_pwd);
+  cleanbody();
   return NSS_STATUS_NOTFOUND;
 }
 
@@ -267,21 +264,19 @@ enum nss_status _nss_shib_getpwent_r(struct passwd *result, char *buffer, size_t
   #endif
 
   readconfig();
-  char *newurl = (char *) malloc(sizeof(char)*(strlen(url)+8));
+  char newurl[1024];
   sprintf(newurl, "%s?passwd", url);
-  if (!geturl(newurl, username, password, cafile, sslcheck)) { free(newurl); return NSS_STATUS_UNAVAIL; }
-  free(newurl);
-  body_pwd = body; body = NULL;
-  if (body_pwd == NULL) return NSS_STATUS_UNAVAIL;
+  if (!geturl(newurl, username, password, cafile, sslcheck)) return NSS_STATUS_UNAVAIL;
+  if (body == NULL) return NSS_STATUS_UNAVAIL;
 
   int i = 0;
-  BODY *cursor = body_pwd;
+  BODY *cursor = body;
   while (cursor)
   {
     if (last_rownum_pwd == -1 && i > last_rownum_pwd)
     {
       char *cur_row = (char *)malloc(strlen(cursor->row)+1);
-      memcpy(cur_row, cursor->row, strlen(cursor->row)+1);
+      strcpy(cur_row, cursor->row);
       char **array = split_str(cur_row, ":");
       if (array[0] != NULL)
       {
@@ -297,8 +292,7 @@ enum nss_status _nss_shib_getpwent_r(struct passwd *result, char *buffer, size_t
         fprintf(stderr, "Found item: [name=%s, uid=%d, gid=%d]\n", array[0], atoi(array[2]), atoi(array[3]));
         #endif
 
-        free_cookies();
-        free_body(body_pwd);
+        cleanbody();
         last_rownum_pwd = i;
         return NSS_STATUS_SUCCESS;
       }
@@ -310,8 +304,7 @@ enum nss_status _nss_shib_getpwent_r(struct passwd *result, char *buffer, size_t
     cursor = cursor->next;
   }
 
-  free_cookies();
-  free_body(body_pwd);
+  cleanbody();
   return NSS_STATUS_NOTFOUND;
 }
 
@@ -342,21 +335,19 @@ enum nss_status _nss_shib_getgrent_r(struct group *result, char *buffer, size_t 
   #endif
 
   readconfig();
-  char *newurl = (char *) malloc(sizeof(char)*(strlen(url)+7));
+  char newurl[1024];
   sprintf(newurl, "%s?group", url);
-  if (!geturl(newurl, username, password, cafile, sslcheck)) { free(newurl); return NSS_STATUS_UNAVAIL; }
-  free(newurl);
-  body_grp = body; body = NULL;
-  if (body_grp == NULL) return NSS_STATUS_UNAVAIL;
+  if (!geturl(newurl, username, password, cafile, sslcheck)) return NSS_STATUS_UNAVAIL;
+  if (body == NULL) return NSS_STATUS_UNAVAIL;
 
   int i = 0;
-  BODY *cursor = body_grp;
+  BODY *cursor = body;
   while (cursor)
   {
     if (last_rownum_grp == -1 || i > last_rownum_grp)
     {
       char *cur_row = (char *)malloc(strlen(cursor->row)+1);
-      memcpy(cur_row, cursor->row, strlen(cursor->row)+1);
+      strcpy(cur_row, cursor->row);
       char **array = split_str(cur_row, ":");
       if (array[0] != NULL)
       {
@@ -369,8 +360,7 @@ enum nss_status _nss_shib_getgrent_r(struct group *result, char *buffer, size_t 
         fprintf(stderr, "Found item: [grname=%s, gid=%d]\n", array[0], atoi(array[2]));
         #endif
 
-        free_cookies();
-        free_body(body_grp);
+        cleanbody();
         last_rownum_grp = i;
         return NSS_STATUS_SUCCESS;
       }
@@ -382,8 +372,7 @@ enum nss_status _nss_shib_getgrent_r(struct group *result, char *buffer, size_t 
     cursor = cursor->next;
   } 
 
-  free_cookies();
-  free_body(body_grp); 
+  cleanbody(); 
   return NSS_STATUS_NOTFOUND;
 }
 
@@ -394,18 +383,16 @@ enum nss_status _nss_shib_getgrnam_r(const char *name, struct group *result, cha
   #endif
 
   readconfig();
-  char *newurl = (char *) malloc(sizeof(char)*(strlen(url)+7));
+  char newurl[1024];
   sprintf(newurl, "%s?group", url);
-  if (!geturl(newurl, username, password, cafile, sslcheck)) { free(newurl); return NSS_STATUS_UNAVAIL; }
-  free(newurl);
-  body_grp = body; body = NULL;
-  if (body_grp == NULL) return NSS_STATUS_UNAVAIL;
+  if (!geturl(newurl, username, password, cafile, sslcheck)) return NSS_STATUS_UNAVAIL;
+  if (body == NULL) return NSS_STATUS_UNAVAIL;
 
-  BODY *cursor = body_grp;
+  BODY *cursor = body;
   while (cursor)
   {
     char *cur_row = (char *)malloc(strlen(cursor->row)+1);
-    memcpy(cur_row, cursor->row, strlen(cursor->row)+1);
+    strcpy(cur_row, cursor->row);
     char **array = split_str(cur_row, ":");
     if (array[0] != NULL)
     {
@@ -420,8 +407,7 @@ enum nss_status _nss_shib_getgrnam_r(const char *name, struct group *result, cha
         fprintf(stderr, "Found item for grname=%s: [gid=%d]\n", name, atoi(array[2]));
         #endif
 
-        free_cookies();
-        free_body(body_grp);
+        cleanbody();
         return NSS_STATUS_SUCCESS;
       }
     }
@@ -430,55 +416,47 @@ enum nss_status _nss_shib_getgrnam_r(const char *name, struct group *result, cha
     cursor = cursor->next;
   }  
 
-  free_cookies();
-  free_body(body_grp);
+  cleanbody();
   return NSS_STATUS_NOTFOUND;
 }
 
 enum nss_status _nss_shib_getgrgid_r(gid_t gid, struct group *result, char *buffer, size_t buflen, int *errnop)
 {
   #ifdef DEBUG
-  fprintf(stderr, "\nEntering _nss_shib_getgrnam_r with gid=%d.\n", gid);
+  fprintf(stderr, "\nEntering _nss_shib_getgrgid_r with gid=%d.\n", gid);
   #endif
 
   readconfig();
-  char *newurl = (char *) malloc(sizeof(char)*(strlen(url)+7));
+  char newurl[1024];
   sprintf(newurl, "%s?group", url);
-  if (!geturl(newurl, username, password, cafile, sslcheck)) { free(newurl); return NSS_STATUS_UNAVAIL; }
-  free(newurl);
-  body_grp = body; body = NULL;
-  if (body_grp == NULL) return NSS_STATUS_UNAVAIL;
+  if (!geturl(newurl, username, password, cafile, sslcheck)) return NSS_STATUS_UNAVAIL;
+  if (body == NULL) return NSS_STATUS_UNAVAIL;
 
-  BODY *cursor = body_grp;
+  BODY *cursor = body;
   while (cursor)
   {
     char *cur_row = (char *)malloc(strlen(cursor->row)+1);
-    memcpy(cur_row, cursor->row, strlen(cursor->row)+1);
+    strcpy(cur_row, cursor->row);
     char **array = split_str(cur_row, ":");
-    if (array[0] != NULL)
+    if (array[0] != NULL && atoi(array[2]) == gid)
     {
-      if (atoi(array[2]) == gid)
-      {
-        result->gr_name = array[0];
-        result->gr_passwd = array[1];
-        result->gr_gid = atoi(array[2]);
-        result->gr_mem = split_str(array[3], ",");
+      result->gr_name = array[0];
+      result->gr_passwd = array[1];
+      result->gr_gid = atoi(array[2]);
+      result->gr_mem = split_str(array[3], ",");
 
-        #ifdef DEBUG
-        fprintf(stderr, "Found item for gid=%d: [name=%s]\n", gid, array[0]);
-        #endif
+      #ifdef DEBUG
+      fprintf(stderr, "Found item for gid=%d: [name=%s]\n", gid, array[0]);
+      #endif
 
-        free_cookies();
-        free_body(body_grp);
-        return NSS_STATUS_SUCCESS;
-      }
+      cleanbody();
+      return NSS_STATUS_SUCCESS;
     }
 
     free(cur_row);
     cursor = cursor->next;
   }  
 
-  free_cookies();
-  free_body(body_grp);
+  cleanbody();
   return NSS_STATUS_NOTFOUND;
 }

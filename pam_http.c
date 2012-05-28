@@ -30,6 +30,19 @@ char *getsessvalue(const char *key)
   return NULL;
 }
 
+void cleansession(SESSION *cursor)
+{
+  if (cursor->next != NULL) cleansession(cursor->next);
+  free(cursor);
+}
+
+void cleanbody()
+{
+  if (session == NULL) return;
+  cleansession(session);
+  session = NULL;
+}
+
 size_t bodycallback(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
   char* pstr = (char *)malloc(size*nmemb+1);
@@ -141,7 +154,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
   }
 
   #ifdef DEBUG
-  fprintf(stderr, "Calling auth function with cafile=%s and sslcheck=%s.\n", cafile, sslcheck);
+  fprintf(stderr, "\nCalling auth function with cafile=%s and sslcheck=%s.\n", cafile, sslcheck);
   #endif
   
   if (pam_get_user(pamh, &username, 0) != PAM_SUCCESS)
@@ -168,7 +181,6 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
     }
   }
 
-  free_cookies();
   memset((void *)password, '\0', strlen(password));
   free((void *)password);
 
@@ -177,6 +189,27 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
 
 PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
+  #ifdef DEBUG
+  fprintf(stderr, "\nSetting values in user session.\n");
+  #endif
+
+  char sess_value[1024];
+  SESSION *cursor = session;
+  while (cursor)
+  {
+    sprintf(sess_value, "%s=%s", cursor->key, cursor->value);
+    if (pam_putenv(pamh, sess_value) != PAM_SUCCESS)
+    {
+      #ifdef DEBUG
+      fprintf(stderr, "Error setting environment variable in user session.\n");
+      #endif
+
+      return PAM_AUTH_ERR;    
+    }
+
+    cursor = cursor->next;
+  }
+
   return PAM_SUCCESS;
 }
 
@@ -186,7 +219,7 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc, const c
   const char *value = "true";
 
   #ifdef DEBUG
-  fprintf(stderr, "Checking authetication rights in session.\n");
+  fprintf(stderr, "\nChecking authetication rights in session.\n");
   #endif
 
   char *authed = getsessvalue(key);
