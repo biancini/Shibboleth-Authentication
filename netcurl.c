@@ -25,7 +25,7 @@ void free_cookies()
   cookies = NULL;
 }
 
-char **split_str(char *str, const char *delimiters)
+char **split_str(char *str, const char *delimiters, int max_splits)
 {
   char **tokenArray = (char **) malloc(sizeof(char *));
   int count = 1;
@@ -39,7 +39,7 @@ char **split_str(char *str, const char *delimiters)
 
   for (i = 0; str[i]; i++)
   {
-    if (str[i] == delimiters[0])
+    if ((max_splits == -1 || count <= max_splits) && str[i] == delimiters[0])
     {
       str[i] = '\0';
 

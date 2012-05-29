@@ -29,4 +29,14 @@ foreach($_SERVER as $key => $value) {
 		print $key."=".$value."\n";
 	}
 }
+
+$cookies = $_SERVER["HTTP_COOKIE"];
+foreach (explode(";", $cookies) as $curcookie) {
+        if (strpos($curcookie, "=")) {
+		list($cookiename, $cookiesval) = explode("=", $curcookie);
+		if (strpos($cookiename, "_shibsession_")) {
+			print "Shib-Session=".trim(str_replace("_shibsession_", "", $cookiename));
+		}
+	}
+}
 ?>

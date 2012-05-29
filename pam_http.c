@@ -57,14 +57,14 @@ size_t bodycallback(char *ptr, size_t size, size_t nmemb, void *userdata)
   pstr[size*nmemb] = '\0';
 
   int i = 0;
-  char **rows = split_str(pstr, "\n");
+  char **rows = split_str(pstr, "\n", -1);
   
   if (rows == NULL || rows[0] == NULL) return nmemb*size;
   for (i = 0; rows[i]; i++)
   {
     if (strstr(rows[i], "="))
     {
-      char **array = split_str(rows[i], "=");
+      char **array = split_str(rows[i], "=", 1);
       if (array == NULL || array[0] == NULL || array[1] == NULL) return nmemb*size;
 
       #ifdef DEBUG
