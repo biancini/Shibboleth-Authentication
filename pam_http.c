@@ -207,7 +207,7 @@ PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const cha
   SESSION *cursor = session;
   while (cursor)
   {
-    sprintf(sess_value, "%s=%s", cursor->key, cursor->value);
+    sprintf(sess_value, "%s=%s", replace_str(cursor->key, "-", "_"), cursor->value);
     if (pam_putenv(pamh, sess_value) != PAM_SUCCESS)
     {
       #ifdef DEBUG
@@ -239,11 +239,19 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc, const c
 
 PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
+  #ifdef DEBUG
+  fprintf(stderr, "\nOpening PAM session.\n");
+  #endif
+
   return PAM_SUCCESS;
 }
 
 PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
+  #ifdef DEBUG
+  fprintf(stderr, "\nClosing PAM session.\n");
+  #endif
+
   cleanbody();
   return PAM_SUCCESS;
 }

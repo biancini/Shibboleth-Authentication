@@ -32,11 +32,12 @@ foreach($_SERVER as $key => $value) {
 
 $cookies = $_SERVER["HTTP_COOKIE"];
 foreach (explode(";", $cookies) as $curcookie) {
-        if (strpos($curcookie, "=")) {
-		list($cookiename, $cookiesval) = explode("=", $curcookie);
-		if (strpos($cookiename, "_shibsession_")) {
-			print "Shib-Session=".trim(str_replace("_shibsession_", "", $cookiename));
-		}
-	}
+        if (strpos($curcookie, "=") !== false) {
+                list($cookiename, $cookieval) = explode("=", trim($curcookie));
+                if (strpos($cookiename, "_shibsession_") !== false) {
+                        print "eccisiamo=si\n";
+                        print "Shib_Session_Unique=".trim(str_replace("_shibsession_", "", $cookiename));
+                }
+        }
 }
 ?>

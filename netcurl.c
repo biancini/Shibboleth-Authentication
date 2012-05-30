@@ -25,6 +25,18 @@ void free_cookies()
   cookies = NULL;
 }
 
+char *replace_str(char *str, const char *find, const char *replace)
+{
+  int i = 0;
+
+  for (i = 0; str[i]; i++)
+  {
+    if (str[i] == find[0]) str[i] = replace[0];
+  }
+
+  return str;
+}
+
 char **split_str(char *str, const char *delimiters, int max_splits)
 {
   char **tokenArray = (char **) malloc(sizeof(char *));
@@ -250,12 +262,16 @@ int geturl(const char *url, const char *username, const char *password, const ch
       if (!userpass) goto cleanup;
 
       cleanbody();
+      url_call = (char *)malloc(strlen(url_old)+1);
+      strcpy(url_call, url_old);
       http_code = __geturl(url_old, userpass, cafile, sslcheck, &url_new);
     }
-
-    free(url_old);
   }
   while (url_new != NULL && strlen(url_new) > 0);
+
+  //url_call = (char *)malloc(strlen(url_old)+1);
+  //strcpy(url_call, url_old);
+  //http_code = __geturl(url_old, userpass, cafile, sslcheck, &url_new);
 
  cleanup:
   if (userpass)
@@ -264,6 +280,7 @@ int geturl(const char *url, const char *username, const char *password, const ch
     free(userpass);
   }
 
+  free(url_old);
   free_cookies();
   return http_code == 200;
 }
