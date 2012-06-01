@@ -12,6 +12,16 @@
 
 struct curl_slist *cookies = NULL;
 
+void set_cookies(struct curl_slist *newcookies)
+{
+  cookies = newcookies;
+}
+
+struct curl_slist *get_cookies()
+{
+  return cookies;
+}
+
 void free_cursor(struct curl_slist *cursor)
 {
   if (cursor->next != NULL) free_cursor(cursor->next);
@@ -25,16 +35,48 @@ void free_cookies()
   cookies = NULL;
 }
 
-char *replace_str(char *str, const char *find, const char *replace)
+char *replace_str(char *str, char *orig, char *rep)
 {
-  int i = 0;
+  static char buffer[2048];
+  char *p = NULL;
 
-  for (i = 0; str[i]; i++)
-  {
-    if (str[i] == find[0]) str[i] = replace[0];
-  }
+  if(!(p = strstr(str, orig))) return str;
 
-  return str;
+  strncpy(buffer, str, p-str);
+  buffer[p-str] = '\0';
+
+  sprintf(buffer+(p-str), "%s%s", rep, p+strlen(orig));
+
+  char *ret_val = (char *) malloc(strlen(buffer)+1);
+  strcpy(ret_val, buffer);
+  return ret_val;
+}
+
+char *extract_str(char *str, const char start, const char end)
+{
+    int len = 0;
+    int write = -1;
+    int i = 0;
+    int j = 0;
+
+    for (i = 0; str[i]; i++)
+    {
+      if (write == -1 && i > 0 && str[i-1] == start) write = 0;
+      if (write == 0 && str[i] == end) write = 1;
+      if (write == 0) len++;
+    }
+
+    char *newstr = (char *)malloc(len+1);
+    write = -1;
+    for (i = 0; str[i]; i++)
+    {
+      if (write == -1 && i > 0 && str[i-1] == start) write = 0;
+      if (write == 0 && str[i] == end) write = 1;
+      if (write == 0) newstr[j++] = str[i];
+    }
+    newstr[j] = '\0';
+
+    return newstr;
 }
 
 char **split_str(char *str, const char *delimiters, int max_splits)
@@ -71,8 +113,7 @@ char **split_str(char *str, const char *delimiters, int max_splits)
 size_t headercallback(void *ptr, size_t size, size_t nmemb, void *userdata)
 {
   int i = 0;
-  int j = 0;
-  int write = -1;
+  int eqsign = -1;
   if (ptr == NULL) return -1;
 
   char *pstr = (char *)ptr;
@@ -80,25 +121,11 @@ size_t headercallback(void *ptr, size_t size, size_t nmemb, void *userdata)
   char headcookie[] = "Set-Cookie";
   if (strcasestr(pstr, headcookie))
   {
-    int len = 0;
-    for (i = 0; pstr[i]; i++)
+    char *newstr = extract_str(pstr, ' ', ';');
+    for (i = 0; newstr[i]; i++)
     {
-      if (write == -1 && i > 0 && pstr[i-1] == ' ') write = 0;
-      if (write == 0 && pstr[i] == ';') write = 1;
-      if (write == 0) len++;
+      if (newstr[i] == '=') eqsign = i;
     }
-
-    char *newstr = (char *)malloc(len+1);
-    int eqsign = -1;
-    write = -1;
-    for (i = 0; pstr[i]; i++)
-    {
-      if (write == -1 && i > 0 && pstr[i-1] == ' ') write = 0;
-      if (write == 0 && pstr[i] == ';') write = 1;
-      if (write == 0) newstr[j++] = pstr[i];
-      if (eqsign == -1 && j > 0 && j <= len && newstr[j-1] == '=') eqsign = j-1;
-    }
-    newstr[j] = '\0';
 
     int found = 1;
     struct curl_slist *cursor = cookies;
@@ -265,7 +292,10 @@ int geturl(const char *url, const char *username, const char *password, const ch
       url_call = (char *)malloc(strlen(url_old)+1);
       strcpy(url_call, url_old);
       http_code = __geturl(url_old, userpass, cafile, sslcheck, &url_new);
+      free(url_call);
+      free(url_old);
     }
+    else free(url_old);
   }
   while (url_new != NULL && strlen(url_new) > 0);
 
@@ -280,7 +310,6 @@ int geturl(const char *url, const char *username, const char *password, const ch
     free(userpass);
   }
 
-  free(url_old);
   free_cookies();
   return http_code == 200;
 }

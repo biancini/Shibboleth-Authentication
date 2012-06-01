@@ -11,9 +11,6 @@
 #define PAM_SM_SESSION
 #include <security/pam_modules.h>
 
-#include <curl/curl.h>
-#include <curl/types.h>
-#include <curl/easy.h>
 #include "netcurl.h"
 
 SESSION *session = NULL;
