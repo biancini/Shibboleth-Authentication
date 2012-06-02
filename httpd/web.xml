@@ -1,0 +1,22 @@
+<!--
+To install the new servlet for NSS files on the IdP Shibboleth webapplication,
+the following operations are requested:
+
+1. copy the nss_idp.jar to the idp/WEB-INF/lib directory (this jar contains
+   the servlet implementation)
+2. edit the idp/WEB-INF/web.xml adding the lines included in the following of
+   this file (these would add the new servlet to the server)
+
+-->
+
+
+<!-- Servlet added for PAM/NSS authentication -->
+<servlet>
+  <servlet-name>nss_jsp</servlet-name>
+  <servlet-class>it.infn.mib.shibboleth.idp.nss.NSSServlet</servlet-class>
+</servlet>
+
+<servlet-mapping>
+  <servlet-name>nss_jsp</servlet-name>
+  <url-pattern>/nss</url-pattern>
+</servlet-mapping>

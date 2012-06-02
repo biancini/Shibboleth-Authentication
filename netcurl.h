@@ -13,6 +13,7 @@ typedef struct _BODY
 
 struct curl_slist *get_cookies(void);
 void set_cookies(struct curl_slist *newcookies);
+char *replace_char(char *str, char orig, char rep);
 char *replace_str(char *str, char *orig, char *rep);
 char *extract_str(char *str, const char start, const char end);
 char **split_str(char *str, const char *delimiters, int max_splits);

@@ -35,6 +35,17 @@ void free_cookies()
   cookies = NULL;
 }
 
+char *replace_char(char *str, char orig, char rep)
+{
+  int i = 0;
+  for (i = 0; str[i]; i++)
+  {
+    if (str[i] == orig) str[i] = rep;
+  }
+
+  return str;
+}
+
 char *replace_str(char *str, char *orig, char *rep)
 {
   static char buffer[2048];
