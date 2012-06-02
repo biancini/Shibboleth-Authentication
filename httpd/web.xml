@@ -6,14 +6,22 @@ the following operations are requested:
    the servlet implementation)
 2. edit the idp/WEB-INF/web.xml adding the lines included in the following of
    this file (these would add the new servlet to the server)
-
+3. configure the init param login.config so that it contains the LDAP URL and
+   base DN for the LDAP containing user definitions
 -->
-
 
 <!-- Servlet added for PAM/NSS authentication -->
 <servlet>
   <servlet-name>nss_jsp</servlet-name>
   <servlet-class>it.infn.mib.shibboleth.idp.nss.NSSServlet</servlet-class>
+  <init-param>
+     <param-name>ldapUrl</param-name>
+     <param-value>ldap://127.0.0.1:389</param-value>
+   </init-param>
+   <init-param>
+     <param-name>baseDN</param-name>
+     <param-value>ou=people,dc=example,dc=com</param-value>
+   </init-param>
 </servlet>
 
 <servlet-mapping>

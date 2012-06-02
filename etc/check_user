@@ -1,5 +1,10 @@
 #
 # /etc/pam.d/check_user
+# This file contains a possible configuration for the pam_http.so module which authenticates
+# users using the HTTP Basic Authentication mechanism.
+# This file is required for the check_user program to work correctly and so it is strongly
+# suggested that it is copied in the /etc/pam.d folder and not only used as a source for
+# modifications to others PAM configuration files.
 #
 
 auth     required       pam_http.so url=https://servername.com/pam.php sess_username=username

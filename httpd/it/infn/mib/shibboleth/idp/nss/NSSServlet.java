@@ -30,21 +30,21 @@ public class NSSServlet extends HttpServlet {
 		String queryString = request.getQueryString();
 		
 		try {
+			// Connection with LDAP and query for users
 			Ldap ldap = new Ldap(new LdapConfig(ldapUrl, baseDN));
 			Iterator<SearchResult> results = ldap.search(new SearchFilter("(&(objectClass=inetOrgPerson)(uid=*))"), new String[]{"uid", "uidnumber", "gidnumber", "displayname", "homedirectory", "loginshell"});
 			
-			if (queryString.equals("?group")) {
-				String allNames = null;
+			// Production of output file
+			if (queryString != null && queryString.equals("group")) {
+				// Production group file
 				while (results.hasNext()) {
 					SearchResult curResult = results.next();
 					out.print(curResult.getAttributes().get("uid").get().toString() + ":x:");
 					out.println(curResult.getAttributes().get("uidnumber").get().toString() + ":");
-					allNames = (allNames == null) ? "" : allNames + ",";
-					allNames += curResult.getAttributes().get("uid");
 				}
-				out.println("shibuser:x:10000:" + allNames);
 			}
 			else {
+				// Production passwd file
 				while (results.hasNext()) {
 					SearchResult curResult = results.next();
 					out.print(curResult.getAttributes().get("uid").get().toString() + ":x:");
@@ -56,7 +56,7 @@ public class NSSServlet extends HttpServlet {
 				}
 			}
 		} catch (NamingException e) {
-			e.printStackTrace();
+			getServletContext().log("Exception occurred while accessing LDAP.", e);
 		}
 	
 	}
