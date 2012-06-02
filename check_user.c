@@ -32,11 +32,19 @@ int main(int argc, char *argv[])
         
     if (retval == PAM_SUCCESS) retval = pam_authenticate(pamh, 0);
     if (retval == PAM_SUCCESS) retval = pam_acct_mgmt(pamh, 0);
+    if (retval == PAM_SUCCESS) retval = pam_setcred(pamh, 0);
     if (retval == PAM_SUCCESS) retval = pam_get_item(pamh, PAM_USER, &authenticated_user);
 
     /* This is where we have been authorized or not. */
 
-    if (retval == PAM_SUCCESS) fprintf(stdout, "Authenticated (user: %s).\n", (char *)authenticated_user);
+    if (retval == PAM_SUCCESS)
+    {
+      fprintf(stdout, "Authenticated (user: %s).\n", (char *)authenticated_user);
+      const char *cur_var_value = pam_getenv(pamh, "Shib_Session_Unique");
+      fprintf(stdout, "Environment: [Shib_Session_Unique] => %s\n", cur_var_value);
+      cur_var_value = pam_getenv(pamh, "Shib_Session_ID");
+      fprintf(stdout, "Environment: [Shib_Session_ID] => %s\n", cur_var_value);
+    }
     else fprintf(stdout, "Not Authenticated: %s.\n", pam_strerror(pamh, retval));
 
     if (pam_end(pamh,retval) != PAM_SUCCESS)

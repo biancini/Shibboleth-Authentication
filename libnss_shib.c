@@ -154,13 +154,12 @@ static void readconfig()
          char *new_cookie_name = replace_str(cookie_name, cur_var_fname, cur_var_value);
          free(cookie_name);
          cookie_name = new_cookie_name;
-         //if (cur_var != NULL) free(cur_var);
+         //if (cur_nam != NULL) free(cur_nam);
          if (cur_var_fname != NULL) free(cur_var_fname);
          //if (cur_var_value != NULL) free(cur_var_value);
 
          cur_nam = strstr(cookie_name, "$");
        }
-
 
        sprintf(strkey, "cookie_%d_value", i);
        config_lookup_string(&cfg, &strkey[0], &val);
@@ -195,9 +194,6 @@ static void readconfig()
        #ifdef DEBUG
        fprintf(stderr, "Read new cookie: [%s] => %s\n", cookie_name, cookie_value);
        #endif
-
-       free(cookie_name);
-       free(cookie_value);
     }
   }
 
