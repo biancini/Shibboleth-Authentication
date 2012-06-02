@@ -8,6 +8,7 @@
 #include <security/pam_appl.h>
 #include <security/pam_misc.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 static struct pam_conv conv = {
     misc_conv,
@@ -41,9 +42,11 @@ int main(int argc, char *argv[])
     {
       fprintf(stdout, "Authenticated (user: %s).\n", (char *)authenticated_user);
       const char *cur_var_value = pam_getenv(pamh, "Shib_Session_Unique");
-      fprintf(stdout, "Environment: [Shib_Session_Unique] => %s\n", cur_var_value);
+      fprintf(stdout, "export Shib_Session_Unique=%s\n", cur_var_value);
+      setenv("Shib_Session_Unique", cur_var_value, 1);
       cur_var_value = pam_getenv(pamh, "Shib_Session_ID");
-      fprintf(stdout, "Environment: [Shib_Session_ID] => %s\n", cur_var_value);
+      fprintf(stdout, "export Shib_Session_ID=%s\n", cur_var_value);
+      setenv("Shib_Session_ID", cur_var_value, 1);
     }
     else fprintf(stdout, "Not Authenticated: %s.\n", pam_strerror(pamh, retval));
 
