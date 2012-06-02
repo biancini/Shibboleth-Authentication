@@ -204,6 +204,7 @@ size_t bodycallback(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
   char* pstr = (char *)ptr;
 
+  replace_char(pstr, '\r', ':');
   char **rows = split_str(pstr, "\n", -1);
   if (rows == NULL || rows[0] == NULL)
   {

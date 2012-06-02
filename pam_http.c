@@ -204,7 +204,10 @@ PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const cha
   SESSION *cursor = session;
   while (cursor)
   {
-    sprintf(sess_value, "%s=%s", replace_char(cursor->key, '-', '_'), cursor->value);
+    replace_char(cursor->key, '-', '_');
+    sprintf(sess_value, "%s=%s", cursor->key, cursor->value);
+    setenv(cursor->key, cursor->value, 1);
+
     if (pam_putenv(pamh, sess_value) != PAM_SUCCESS)
     {
       #ifdef DEBUG
