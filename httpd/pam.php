@@ -16,6 +16,7 @@ The example provided below, lists from the $_SERVER object a bunch of attributes
 via Shibboleth after the user authentication and session creation.
 
 ***********************************************************************************************/
+header("Content-type: text/plain");
 
 // At first put a value in session called autheticated, this value will contain true or false
 // depending on if the user should be granted access or not.

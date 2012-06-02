@@ -14,6 +14,8 @@ credentials.
 
 ***********************************************************************************************/
 
+  header("Content-type: text/plain");
+
   // Specificiation of parameters to connect with the LDAP of the IdP
   $LDAPHost = "127.0.0.1";
   $LDAPPort = "389";

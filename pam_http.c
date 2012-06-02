@@ -61,6 +61,7 @@ size_t bodycallback(char *ptr, size_t size, size_t nmemb, void *userdata)
   {
     if (strstr(rows[i], "="))
     {
+      replace_char(rows[i], '\r', '\0');
       char **array = split_str(rows[i], "=", 1);
       if (array == NULL || array[0] == NULL || array[1] == NULL) return nmemb*size;
 
