@@ -41,12 +41,12 @@ int main(int argc, char *argv[])
     if (retval == PAM_SUCCESS)
     {
       fprintf(stdout, "Authenticated (user: %s).\n", (char *)authenticated_user);
+
+      fprintf(stdout, "\nExecute these two directives to have the proper envirnoment variables initialized in your session:\n");
       const char *cur_var_value = pam_getenv(pamh, "Shib_Session_Unique");
       fprintf(stdout, "export Shib_Session_Unique=%s\n", cur_var_value);
-      setenv("Shib_Session_Unique", cur_var_value, 1);
       cur_var_value = pam_getenv(pamh, "Shib_Session_ID");
       fprintf(stdout, "export Shib_Session_ID=%s\n", cur_var_value);
-      setenv("Shib_Session_ID", cur_var_value, 1);
     }
     else fprintf(stdout, "Not Authenticated: %s.\n", pam_strerror(pamh, retval));
 

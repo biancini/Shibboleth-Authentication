@@ -183,7 +183,6 @@ long __geturl(const char *url, const char *userpass, const char *cafile, const c
 
   if (!hCurl) return http_code;
 
-  curl_easy_setopt(hCurl, CURLOPT_URL, url);
   curl_easy_setopt(hCurl, CURLOPT_NOPROGRESS, 1);
   curl_easy_setopt(hCurl, CURLOPT_FAILONERROR, 1);
 
@@ -250,7 +249,7 @@ long __geturl(const char *url, const char *userpass, const char *cafile, const c
   fprintf(stderr, "Response code: %ld\n", http_code);
   #endif
 
-  char *redir_url = url_new[0] = NULL;
+  char *redir_url = NULL;
   curl_easy_getinfo(hCurl, CURLINFO_REDIRECT_URL, &redir_url);
 
   if (redir_url != NULL)
@@ -285,7 +284,7 @@ int geturl(const char *url, const char *username, const char *password, const ch
     strcpy(url_call, url_new);
     cleanbody();
 
-    free(url_new);
+    free(url_new); url_new = NULL;
     http_code = __geturl(url_call, NULL, cafile, sslcheck, &url_new);
     free(url_call);
 
@@ -302,6 +301,8 @@ int geturl(const char *url, const char *username, const char *password, const ch
       cleanbody();
       url_call = (char *)malloc(strlen(url_old)+1);
       strcpy(url_call, url_old);
+
+      if (url_new != NULL) free(url_new); url_new = NULL;
       http_code = __geturl(url_old, userpass, cafile, sslcheck, &url_new);
       free(url_call);
       free(url_old);

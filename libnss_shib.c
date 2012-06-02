@@ -156,7 +156,6 @@ static void readconfig()
          cookie_name = new_cookie_name;
          //if (cur_nam != NULL) free(cur_nam);
          if (cur_var_fname != NULL) free(cur_var_fname);
-         //if (cur_var_value != NULL) free(cur_var_value);
 
          cur_nam = strstr(cookie_name, "$");
        }
@@ -180,7 +179,6 @@ static void readconfig()
          cookie_value = new_cookie_value;
          //if (cur_var != NULL) free(cur_var);
          if (cur_var_fname != NULL) free(cur_var_fname);
-         //if (cur_var_value != NULL) free(cur_var_value);
 
          cur_var = strstr(cookie_value, "$");
        }
@@ -194,6 +192,9 @@ static void readconfig()
        #ifdef DEBUG
        fprintf(stderr, "Read new cookie: [%s] => %s\n", cookie_name, cookie_value);
        #endif
+
+       free(cookie_name);
+       free(cookie_value);
     }
   }
 
