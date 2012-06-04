@@ -132,69 +132,70 @@ static void readconfig()
   {
     config_lookup_string(&cfg, "cookie_num", &val);
     int num_cookies = atoi(val);
-    int i = 1;
-    for (i = 1; i <= num_cookies; i++)
+    if (num_cookies > 0)
     {
-       char strkey[512];
+      int i = 1;
+      for (i = 1; i <= num_cookies; i++)
+      {
+        char strkey[512];
 
-       sprintf(strkey, "cookie_%d_name", i);
-       config_lookup_string(&cfg, &strkey[0], &val);
-       char *cookie_name = (char *) malloc(strlen(val)+1);
-       strcpy(cookie_name, val);
+        sprintf(strkey, "cookie_%d_name", i);
+        config_lookup_string(&cfg, &strkey[0], &val);
+        char *cookie_name = (char *) malloc(strlen(val)+1);
+        strcpy(cookie_name, val);
 
-       char *cur_nam = strstr(cookie_name, "$");
-       while (cur_nam != NULL)
-       {
-         char *cur_var_name = extract_str(cur_nam, '{', '}');
-         char *cur_var_value = getenv(cur_var_name);
-         char *cur_var_fname = (char *) malloc(strlen(cur_var_name)+4);
-         sprintf(cur_var_fname, "${%s}", cur_var_name);
-         free(cur_var_name);
+        char *cur_nam = strstr(cookie_name, "$");
+        while (cur_nam != NULL)
+        {
+          char *cur_var_name = extract_str(cur_nam, '{', '}');
+          char *cur_var_value = getenv(cur_var_name);
+          char *cur_var_fname = (char *) malloc(strlen(cur_var_name)+4);
+          sprintf(cur_var_fname, "${%s}", cur_var_name);
+          free(cur_var_name);
 
-         char *new_cookie_name = replace_str(cookie_name, cur_var_fname, cur_var_value);
-         free(cookie_name);
-         cookie_name = new_cookie_name;
-         //if (cur_nam != NULL) free(cur_nam);
-         if (cur_var_fname != NULL) free(cur_var_fname);
+          char *new_cookie_name = replace_str(cookie_name, cur_var_fname, cur_var_value);
+          free(cookie_name);
+          cookie_name = new_cookie_name;
+          if (cur_var_fname != NULL) free(cur_var_fname);
 
-         cur_nam = strstr(cookie_name, "$");
-       }
+          cur_nam = strstr(cookie_name, "$");
+        }
 
-       sprintf(strkey, "cookie_%d_value", i);
-       config_lookup_string(&cfg, &strkey[0], &val);
-       char *cookie_value = (char *) malloc(strlen(val)+1);
-       sprintf(cookie_value, val);
+        sprintf(strkey, "cookie_%d_value", i);
+        config_lookup_string(&cfg, &strkey[0], &val);
+        char *cookie_value = (char *) malloc(strlen(val)+1);
+        sprintf(cookie_value, val);
 
-       char *cur_var = strstr(cookie_value, "$");
-       while (cur_var != NULL)
-       {
-         char *cur_var_name = extract_str(cur_var, '{', '}');
-         char *cur_var_value = getenv(cur_var_name);
-         char *cur_var_fname = (char *) malloc(strlen(cur_var_name)+4);
-         sprintf(cur_var_fname, "${%s}", cur_var_name);
-         free(cur_var_name);
+        char *cur_var = strstr(cookie_value, "$");
+        while (cur_var != NULL)
+        {
+          char *cur_var_name = extract_str(cur_var, '{', '}');
+          char *cur_var_value = getenv(cur_var_name);
+          char *cur_var_fname = (char *) malloc(strlen(cur_var_name)+4);
+          sprintf(cur_var_fname, "${%s}", cur_var_name);
+          free(cur_var_name);
 
-         char *new_cookie_value = replace_str(cookie_value, cur_var_fname, cur_var_value);
-         free(cookie_value);
-         cookie_value = new_cookie_value;
-         //if (cur_var != NULL) free(cur_var);
-         if (cur_var_fname != NULL) free(cur_var_fname);
+          char *new_cookie_value = replace_str(cookie_value, cur_var_fname, cur_var_value);
+          free(cookie_value);
+          cookie_value = new_cookie_value;
+          if (cur_var_fname != NULL) free(cur_var_fname);
 
-         cur_var = strstr(cookie_value, "$");
-       }
+          cur_var = strstr(cookie_value, "$");
+        }
 
-       struct curl_slist *curcookie = (struct curl_slist *) malloc(sizeof(struct curl_slist));
-       curcookie->data = (char *) malloc(strlen(cookie_name)+strlen(cookie_value)+2);
-       sprintf(curcookie->data, "%s=%s", cookie_name, cookie_value);
-       curcookie->next = get_cookies();
-       set_cookies(curcookie);
+        struct curl_slist *curcookie = (struct curl_slist *) malloc(sizeof(struct curl_slist));
+        curcookie->data = (char *) malloc(strlen(cookie_name)+strlen(cookie_value)+2);
+        sprintf(curcookie->data, "%s=%s", cookie_name, cookie_value);
+        curcookie->next = get_cookies();
+        set_cookies(curcookie);
 
-       #ifdef DEBUG
-       fprintf(stderr, "Read new cookie: [%s] => %s\n", cookie_name, cookie_value);
-       #endif
+        #ifdef DEBUG
+        fprintf(stderr, "Read new cookie: [%s] => %s\n", cookie_name, cookie_value);
+        #endif
 
-       free(cookie_name);
-       free(cookie_value);
+        free(cookie_name);
+        free(cookie_value);
+      }
     }
   }
 
