@@ -35,6 +35,20 @@ void free_cookies()
   cookies = NULL;
 }
 
+int count_char_in_str(char *str, char find)
+{
+  int count = 0;
+  int i = 0;
+
+  if (str == NULL) return count;
+  for (i = 0; str[i]; i++)
+  {
+    if (str[i] == find) count++;
+  }
+
+  return count;
+}
+
 char *replace_char(char *str, char orig, char rep)
 {
   int i = 0;
