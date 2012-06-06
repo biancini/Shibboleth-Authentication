@@ -111,7 +111,7 @@ const char *get_password(pam_handle_t *pamh, const char *username, int flags, in
   char *message;
   int i = 0;
 
-  rc = pam_get_item (pamh, PAM_AUTHTOK, (const void **) &password);
+  rc = pam_get_item(pamh, PAM_AUTHTOK, (const void **) &password);
   if (rc == PAM_SUCCESS && (use_first_pass || try_first_pass)) return password;
 
   if ((flags & PAM_SILENT) == PAM_SILENT)
