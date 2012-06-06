@@ -29,6 +29,8 @@ package it.infn.mib.shibboleth.jaas;
 
 import java.io.Serializable;
 import java.security.Principal;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * <p> This class implements the <code>Principal</code> interface
@@ -53,13 +55,14 @@ public class ShibbolethPrincipal implements Principal, Serializable {
      * @serial
      */
     private String name = null;
+    private Map<String, String> session = null;
 
     /**
-     * Create a SamplePrincipal with a Sample username.
+     * Create a ShibbolethPrincipal with a username.
      *
      * <p>
      *
-     * @param name the Sample username for this user.
+     * @param name the username for this user.
      *
      * @exception NullPointerException if the <code>name</code>
      *			is <code>null</code>.
@@ -67,17 +70,69 @@ public class ShibbolethPrincipal implements Principal, Serializable {
     public ShibbolethPrincipal(String name) {
 		if (name == null) throw new NullPointerException("illegal null input");
 		this.name = name;
+		this.session = new HashMap<String, String>();
     }
 
+    /**
+     * Return the username for this <code>ShibbolethPrincipal</code>.
+     *
+     * <p>
+     *
+     * @return the username for this <code>ShibbolethPrincipal</code>
+     */
+    public String getName() {
+    	return name;
+    }
+    
+    /**
+     * Sets the session for this <code>ShibbolethPrincipal</code>.
+     *
+     * <p>
+     *
+     * @param session The map with the session key-value pairs
+     */
+    public void setSession(Map<String, String> session) {
+    	this.session = session;
+    }
+    
     /**
      * Return the Sample username for this <code>ShibbolethPrincipal</code>.
      *
      * <p>
      *
-     * @return the Sample username for this <code>ShibbolethPrincipal</code>
+     * @param key The key to be inserted in the <code>session</code> map
+     * @param value The value of the provided key to be inserted in the <code>session</code> map
      */
-    public String getName() {
-    	return name;
+    public void addSessionValue(String key, String value) {
+    	session.put(key, value);
+    }
+    
+    /**
+     * Return the Sample username for this <code>ShibbolethPrincipal</code>.
+     *
+     * <p>
+     *
+     * @param key The key to be searched in the <code>session<code> map
+     * @return The value of the provided key or <code>null</code> if the key is not found
+     */
+    public String getSessionValue(String key) {
+    	if (session.containsKey(key)) return session.get(key);
+    	return null;
+    }
+    
+    /**
+     * Return a String with the content of the session for this <code>ShibbolethPrincipal</code>.
+     *
+     * <p>
+     *
+     * @return A string with all values in the <code>session</code> map
+     */
+    public String printSession() {
+    	String printSession = "";
+    	for (String curKey : session.keySet()) {
+    		printSession += "[" + curKey + "] => " + session.get(curKey) + "\n";
+    	}
+    	return printSession;
     }
 
     /**

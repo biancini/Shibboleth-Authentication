@@ -31,6 +31,7 @@ import it.infn.mib.shibboleth.jaas.impl.HTTPMethods;
 import it.infn.mib.shibboleth.jaas.impl.HTTPPage;
 
 import java.net.HttpURLConnection;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.security.auth.Subject;
@@ -61,25 +62,25 @@ import javax.security.auth.spi.LoginModule;
  */
 public class JAASShibbolethLoginModule implements LoginModule {
 	
-	public static void main(String [] args) {
-		HTTPPage page = HTTPMethods.getUrl("https://cloud-mi-03.mib.infn.it/secure/pam.php", "andrea", "ciaoandrea");
-		System.out.println(page.getReturnCode());
-	}
-	
 	private Subject subject = null;
 	private CallbackHandler callbackHandler = null;
 	private boolean debug = false;
 	
 	//private boolean useFirstPass = false;
 	//private boolean tryFirstPass = false;
+	private String url = null;
+	private boolean sslCheck = false;
+	private String trustStore = null;
+	private String trustStorePassword = null;
 	
 	private String username = null;
     private char[] password = null;
     private ShibbolethPrincipal userPrincipal = null;
+    private String sessUsername = null;
     
     private boolean succeeded = false;
     private boolean commitSucceeded = false;
-
+    private HTTPPage page = null;
 
     /**
      * Initialize this <code>LoginModule</code>.
@@ -104,11 +105,18 @@ public class JAASShibbolethLoginModule implements LoginModule {
 		this.callbackHandler = callbackHandler;
 
 		// initialize any configured options
-		debug = "true".equalsIgnoreCase((String)options.get("debug"));
+		debug = "true".equalsIgnoreCase((String) options.get("debug"));
 		HTTPMethods.debug = debug;
 		
 		//tryFirstPass = options.get("try_first_pass") != null;
 		//useFirstPass = options.get("use_first_pass") != null;
+		url = (String) options.get("url");
+		sessUsername = (String) options.get("sess_username");
+		sslCheck = "true".equalsIgnoreCase((String) options.get("sslcheck"));
+		trustStore = (String) options.get("truststore");
+		if (trustStore.equals("")) trustStore = null;
+		trustStorePassword = (String) options.get("truststore_password");
+		if (trustStorePassword.equals("")) trustStorePassword = null;
 	}
 	
 	/**
@@ -153,21 +161,21 @@ public class JAASShibbolethLoginModule implements LoginModule {
 
 		// print debugging information
 		if (debug) {
-		    System.err.println("\t\t[SampleLoginModule] user entered user name: " + username);
-		    System.err.print("\t\t[SampleLoginModule] user entered password: ");
+		    System.err.println("[SampleLoginModule] user entered user name: " + username);
+		    System.err.print("[SampleLoginModule] user entered password: ");
 		    for (int i = 0; i < password.length; i++) System.err.print(password[i]);
 		    System.err.println();
 		}
 
-		HTTPPage page = HTTPMethods.getUrl("https://cloud-mi-03.mib.infn.it/secure/pam.php", username, new String(password));
+		page = HTTPMethods.getUrl(url, username, new String(password), sslCheck, trustStore, trustStorePassword);
 		if (page.getReturnCode() == HttpURLConnection.HTTP_OK) {
 		    // authentication succeeded!!!
-		    if (debug) System.err.println("\t\t[SampleLoginModule] authentication succeeded");
+		    if (debug) System.err.println("[SampleLoginModule] authentication succeeded");
 		    succeeded = true;
 		    return true;
 		} else {
 		    // authentication failed -- clean out state
-		    if (debug) System.err.println("\t\t[SampleLoginModule] authentication failed");
+		    if (debug) System.err.println("[SampleLoginModule] authentication failed");
 		    succeeded = false;
 		    username = null;
 		    
@@ -202,6 +210,7 @@ public class JAASShibbolethLoginModule implements LoginModule {
 		    password = null;
 		}
 		userPrincipal = null;
+		page = null;
 		return true;
 	}
 	
@@ -271,20 +280,34 @@ public class JAASShibbolethLoginModule implements LoginModule {
 		if (succeeded == false) {
 		    return false;
 		} else {
-		    // add a Principal (authenticated identity)
-		    // to the Subject
-
-		    // assume the user we authenticated is the SamplePrincipal
-		    userPrincipal = new ShibbolethPrincipal(username);
+			Map<String, String> session = new HashMap<String, String>();
+			for (String curBodyRow : page.getBodyRows()) {
+		    	if (curBodyRow != null) {
+		    		if (curBodyRow.contains("=")) session.put(curBodyRow.substring(0, curBodyRow.indexOf("=")), curBodyRow.substring(curBodyRow.indexOf("=")+1));
+		    		else session.put(curBodyRow, "");
+		    	}
+		    }
+			
+		    // add a Principal (authenticated identity) to the Subject
+			if (sessUsername != null && !sessUsername.equals("")) {
+				userPrincipal = new ShibbolethPrincipal(session.get(sessUsername));
+			}
+			else {
+				userPrincipal = new ShibbolethPrincipal(username);
+			}
+		    
+		    userPrincipal.setSession(session);
+		    
 		    if (!subject.getPrincipals().contains(userPrincipal))
 			subject.getPrincipals().add(userPrincipal);
 
-		    if (debug) System.err.println("\t\t[SampleLoginModule] added ShibbolethPrincipal to Subject.");
+		    if (debug) System.err.println("[SampleLoginModule] added ShibbolethPrincipal to Subject.");
 
 		    // in any case, clean out state
 		    username = null;
 		    for (int i = 0; i < password.length; i++) password[i] = ' ';
 		    password = null;
+		    page = null;
 
 		    commitSucceeded = true;
 		    return true;

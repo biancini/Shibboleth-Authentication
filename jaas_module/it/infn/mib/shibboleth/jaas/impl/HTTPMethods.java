@@ -1,5 +1,5 @@
 /*
- * @(#)JAASShibbolethLoginModule.java	1.00 06/06/12
+ * @(#)HTTPMethods.java	1.00 06/06/12
  *
  * Copyright 2012-2012 Andrea Biancini. All rights reserved.
  *
@@ -50,9 +50,16 @@ import org.apache.commons.codec.binary.Base64;
 public class HTTPMethods {
 	public static boolean debug = false;
 	private static List<String> cookies = new ArrayList<String>();
+	private static boolean sslCheck = false;
+	private static String trustStore = null;
+	private static String trustStorePassword = null;
 	
-	public static HTTPPage getUrl(String urlToRead, String username, String password) {
+	public static HTTPPage getUrl(String urlToRead, String username, String password, boolean sslCheck, String trustStore, String trustStorePassword) {
 		HTTPPage returnedPage = null;
+		HTTPMethods.sslCheck = sslCheck;
+		HTTPMethods.trustStore = trustStore;
+		HTTPMethods.trustStorePassword = trustStorePassword;
+		
 		while (urlToRead != null) {
 			returnedPage = getSingleUrl(urlToRead, null);
 			
@@ -66,29 +73,36 @@ public class HTTPMethods {
 	}
 	
 	private static HttpURLConnection createConnectionHttps(String urlToRead) throws NoSuchAlgorithmException, KeyManagementException, MalformedURLException, IOException {
-		final TrustManager[] trustAllCerts = new TrustManager[] {
-				new X509TrustManager() {
-					@Override
-					public void checkClientTrusted(final X509Certificate[] chain, final String authType) { }
-					@Override
-					public void checkServerTrusted(final X509Certificate[] chain, final String authType) { }
-					@Override
-					public X509Certificate[] getAcceptedIssuers() {
-						return null;
+	    // All set up, we can get a resource through https now:
+	    final HttpURLConnection conn = (HttpURLConnection) new URL(urlToRead).openConnection();
+	    
+		if (HTTPMethods.sslCheck == false) {
+			final TrustManager[] trustAllCerts = new TrustManager[] {
+					new X509TrustManager() {
+						@Override
+						public void checkClientTrusted(final X509Certificate[] chain, final String authType) { }
+						@Override
+						public void checkServerTrusted(final X509Certificate[] chain, final String authType) { }
+						@Override
+						public X509Certificate[] getAcceptedIssuers() {
+							return null;
 						}
 					}
 				};
-		
-		// Install the all-trusting trust manager
-	    final SSLContext sslContext = SSLContext.getInstance("SSL");
-	    sslContext.init( null, trustAllCerts, new java.security.SecureRandom() );
-	    // Create an ssl socket factory with our all-trusting manager
-	    final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-	    
-	    // All set up, we can get a resource through https now:
-	    final HttpURLConnection conn = (HttpURLConnection) new URL(urlToRead).openConnection();
-	    // Tell the url connection object to use our socket factory which bypasses security checks
-	    ((HttpsURLConnection) conn).setSSLSocketFactory(sslSocketFactory);
+			
+			// Install the all-trusting trust manager
+		    final SSLContext sslContext = SSLContext.getInstance("SSL");
+		    sslContext.init( null, trustAllCerts, new java.security.SecureRandom() );
+		    // Create an ssl socket factory with our all-trusting manager
+		    final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+		    
+		    // Tell the url connection object to use our socket factory which bypasses security checks
+		    ((HttpsURLConnection) conn).setSSLSocketFactory(sslSocketFactory);
+		}
+		else {
+			if (trustStore != null) System.setProperty( "javax.net.ssl.trustStore", trustStore);
+			if (trustStorePassword != null) System.setProperty( "javax.net.ssl.trustStorePassword", trustStorePassword);
+		}
 		
 		return conn;
 	}
@@ -139,7 +153,6 @@ public class HTTPMethods {
 			if (returnedPage.getReturnCode() == HttpURLConnection.HTTP_OK) {
 				rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
 				while ((line = rd.readLine()) != null) {
-					System.out.println("-> " + line);
 					returnedPage.addBodyRow(line);
 				}
 				rd.close();

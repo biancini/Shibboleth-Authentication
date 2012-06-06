@@ -1,5 +1,5 @@
 /*
- * @(#)HTTPPage.java	1.00 06/06/12
+ * @(#)LoginMain.java	1.00 06/06/12
  *
  * Copyright 2012-2012 Andrea Biancini. All rights reserved.
  *
@@ -25,50 +25,41 @@
  * maintenance of any nuclear facility. 
  */
 
-package it.infn.mib.shibboleth.jaas.impl;
+package it.mib.shibboleth.jaas.test;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import it.infn.mib.shibboleth.jaas.ShibbolethPrincipal;
 
-public class HTTPPage {
+import java.security.Principal;
 
-	private int returnCode = -1;
-	private Map<String, String> headerFields = null;
-	private List<String> bodyRows = null;
-	
-	public HTTPPage() {
-		headerFields = new HashMap<String, String>();
-		bodyRows = new ArrayList<String>();
-	}
-	
-	public int getReturnCode() {
-		return returnCode;
-	}
+import javax.security.auth.login.LoginContext;
+import javax.security.auth.login.LoginException;
 
-	public void setReturnCode(int returnCode) {
-		this.returnCode = returnCode;
-	}
-	
-	public String getHeaderField(String fieldName) {
-		if (headerFields != null && headerFields.containsKey(fieldName)) {
-			return headerFields.get(fieldName);
+public class LoginMain {
+
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		try {
+			
+			LoginContext lc =  new LoginContext("Shibboleth", new MyCallbackHandler());
+			lc.login();
+			System.out.println("User logged in successfully.");
+			
+			// Prints the session values for the logged in user
+			for (Principal curPrincipal : lc.getSubject().getPrincipals()) {
+				if (curPrincipal instanceof ShibbolethPrincipal) {
+					System.out.println("Username for logged user is: " + ((ShibbolethPrincipal) curPrincipal).getName());
+					
+					System.out.println("Printing session for logged in user: ");
+					System.out.print(((ShibbolethPrincipal) curPrincipal).printSession());
+				}
+			}
+			
+		} catch (LoginException e) {
+			System.err.println("Error logging in user.");
+			e.printStackTrace();
 		}
-		
-		return null;
 	}
-	
-	public void addHeaderField(String fieldName, String fieldValues) {
-		headerFields.put(fieldName, fieldValues);
-	}
-	
-	public void addBodyRow(String bodyRow) {
-		bodyRows.add(bodyRow);
-	}
-	
-	public List<String> getBodyRows() {
-		return bodyRows;
-	}
-	
+
 }
