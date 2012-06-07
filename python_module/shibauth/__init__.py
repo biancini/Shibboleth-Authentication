@@ -19,6 +19,7 @@ def login(username, password=None):
             vals = cur_row.split("=")
             if (len(vals) > 0 and vals[0]):
                 session[vals[0]] = (len(vals) > 1) and vals[1] or None
+        if not session["authenticated"].lower() == "true": raise Exception("Unable to log in user")
         loggeduser = (sess_username) and session[sess_username] or username
         return loggeduser, session
     else:
