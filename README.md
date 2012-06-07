@@ -44,9 +44,23 @@ JAAS module
 The JAAS module permits to authenticate inside Java applications.
 It uses the java.net and java.io classes to connect with the webserver and reads user session
 information from the web pages served after authentication (in a very similar way to the PAM
-module written in C.
+module written in C).
 
 To obtain more information on JAAS modules, visit:
 
   [http://docs.oracle.com/javase/1.4.2/docs/guide/security/jaas/JAASLMDevGuide.html]
+
+
+Python module
+-------------
+
+The Python module permits to authenticate inside python applications.
+It uses the urllib2 library to connect with the webserver and reads user session
+information from the web pages served after authentication (in a very similar way to the PAM
+module written in C).
+
+To obtain more information on urllib2, visit:
+
+  [http://docs.python.org/library/urllib2.html]
+  
   
