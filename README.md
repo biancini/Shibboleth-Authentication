@@ -8,12 +8,13 @@ Inside this project the following modules are created:
 
   * a PAM module to authenticate over HTTP Basich Auhentication
   * a JAAS module to authenticate inside Java applications
+  * a Python module to authenticate on python applications
   
 Copyright, 2012-2012, Andrea Biancini
 
 
-PAM module
-----------
+PAM/NSS module
+--------------
 
 The PAM module permits to authenticate over HTTP Basic Authentication.
 It uses libcurl to interact with the webserver and reads user session information from the

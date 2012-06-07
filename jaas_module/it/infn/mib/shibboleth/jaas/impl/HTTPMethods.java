@@ -143,7 +143,7 @@ public class HTTPMethods {
 					if (headerKey.equals("Set-Cookie")) {
 						String curCookie = conn.getHeaderField(headerKey);
 						if (curCookie.indexOf(";") > 0) curCookie = curCookie.substring(0, curCookie.indexOf(";"));
-						cookies.add(conn.getHeaderField(headerKey));
+						cookies.add(curCookie);
 					}
 				}
 			}
