@@ -1,8 +1,13 @@
 .classpath
 .project
+.pydevproject
 *.class
 
 # Package Files #
 *.jar
 *.war
 *.ear
+
+# Python Binary Files #
+*.pyc
+*.po
