@@ -28,6 +28,7 @@
 package it.infn.mib.shibboleth.jaas.test;
 
 import java.io.BufferedReader;
+import java.io.Console;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
@@ -37,28 +38,50 @@ import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 
+/**
+ * Default callback handler that prompts the user to inser the required data.
+ */
 public class MyCallbackHandler implements CallbackHandler {
     
-	/*
+	/**
 	 * Invoke an array of Callbacks.
+	 * 
+	 * @param callbacks The array of callbacks available
 	 */
     public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
     	for (int i = 0; i < callbacks.length; i++) {
     		if (callbacks[i] instanceof NameCallback) {
-    			System.out.print(((NameCallback) callbacks[i]).getPrompt());
-    			((NameCallback)callbacks[i]).setName(readLine());
+    			((NameCallback)callbacks[i]).setName(readLine(((NameCallback) callbacks[i]).getPrompt(), false));
     		} else if (callbacks[i] instanceof PasswordCallback) {
-    			System.out.print(((PasswordCallback) callbacks[i]).getPrompt());
-    			((PasswordCallback) callbacks[i]).setPassword(readLine().toCharArray());
+    			((PasswordCallback) callbacks[i]).setPassword(readLine(((NameCallback) callbacks[i]).getPrompt(), true).toCharArray());
     		} else {
     			throw new UnsupportedCallbackException(callbacks[i], "MyCallbackHandler: Unrecognized Callback");
     		}
     	}
     }
     
-    public static String readLine() throws IOException {
-		InputStreamReader converter = new InputStreamReader(System.in);
-		BufferedReader in = new BufferedReader(converter);
-		return in.readLine();
-	}
+    /**
+	 * Method that reads a line from input console.
+	 * 
+	 * @param prompt The text to be show to the user asking for input.
+	 * @param masquered A boolean value indicating if the input of the user
+	 * must be masquered on the console or not.
+	 * @return The line of text read.
+	 */
+    public static String readLine(String prompt, boolean masquered) throws IOException {
+    	
+    	Console console = System.console();
+        if (console != null) {
+        	String input = null;
+        	if (masquered) input = new String(console.readPassword(prompt));
+            else input = new String(console.readLine(prompt));
+        	return input;
+        }
+        else { 
+        	System.err.println("Unable to obtain console");
+        	InputStreamReader converter = new InputStreamReader(System.in);
+        	BufferedReader in = new BufferedReader(converter);
+        	return in.readLine();
+        }
+    }
 }

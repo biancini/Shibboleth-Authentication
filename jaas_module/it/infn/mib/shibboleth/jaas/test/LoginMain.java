@@ -34,10 +34,15 @@ import java.security.Principal;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
+/**
+ * Test class that executes a login with the Shibboleth auth module.
+ */
 public class LoginMain {
 
 	/**
-	 * @param args
+	 * Main method that executes authentication.
+	 * 
+	 * @param args No arguments to be passed
 	 */
 	public static void main(String[] args) {
 		try {
