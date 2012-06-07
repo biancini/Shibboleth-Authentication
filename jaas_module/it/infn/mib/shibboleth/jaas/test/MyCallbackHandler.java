@@ -57,7 +57,7 @@ public class MyCallbackHandler implements CallbackHandler {
     		if (callbacks[i] instanceof NameCallback) {
     			((NameCallback)callbacks[i]).setName(readLine(((NameCallback) callbacks[i]).getPrompt(), false));
     		} else if (callbacks[i] instanceof PasswordCallback) {
-    			((PasswordCallback) callbacks[i]).setPassword(readLine(((NameCallback) callbacks[i]).getPrompt(), true).toCharArray());
+    			((PasswordCallback) callbacks[i]).setPassword(readLine(((PasswordCallback) callbacks[i]).getPrompt(), true).toCharArray());
     		} else {
     			throw new UnsupportedCallbackException(callbacks[i], "MyCallbackHandler: Unrecognized Callback");
     		}
@@ -74,7 +74,6 @@ public class MyCallbackHandler implements CallbackHandler {
 	 * @exception IOException if there is an error reading from console.
 	 */
     public static String readLine(String prompt, boolean masquered) throws IOException {
-    	
     	Console console = System.console();
         if (console != null) {
         	String input = null;
@@ -84,6 +83,7 @@ public class MyCallbackHandler implements CallbackHandler {
         }
         else { 
         	System.err.println("Unable to obtain console");
+        	System.out.print(prompt);
         	InputStreamReader converter = new InputStreamReader(System.in);
         	BufferedReader in = new BufferedReader(converter);
         	return in.readLine();
