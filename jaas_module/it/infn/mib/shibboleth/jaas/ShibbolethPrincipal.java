@@ -43,7 +43,7 @@ import java.util.Map;
  * on how to achieve this.  Authorization decisions can then be based upon 
  * the Principals associated with a <code>Subject</code>.
  * 
- * @version 1.4, 01/11/00
+ * @version 1.0, 06/06/2012
  * @see java.security.Principal
  * @see javax.security.auth.Subject
  */
@@ -51,21 +51,15 @@ public class ShibbolethPrincipal implements Principal, Serializable {
 
 	private static final long serialVersionUID = 7023125781649016438L;
 	
-	/**
-     * @serial
-     */
     private String name = null;
     private Map<String, String> session = null;
 
     /**
      * Create a ShibbolethPrincipal with a username.
      *
-     * <p>
-     *
      * @param name the username for this user.
      *
-     * @exception NullPointerException if the <code>name</code>
-     *			is <code>null</code>.
+     * @exception NullPointerException if the <code>name</code> is <code>null</code>.
      */
     public ShibbolethPrincipal(String name) {
 		if (name == null) throw new NullPointerException("illegal null input");
@@ -76,8 +70,6 @@ public class ShibbolethPrincipal implements Principal, Serializable {
     /**
      * Return the username for this <code>ShibbolethPrincipal</code>.
      *
-     * <p>
-     *
      * @return the username for this <code>ShibbolethPrincipal</code>
      */
     public String getName() {
@@ -87,8 +79,6 @@ public class ShibbolethPrincipal implements Principal, Serializable {
     /**
      * Sets the session for this <code>ShibbolethPrincipal</code>.
      *
-     * <p>
-     *
      * @param session The map with the session key-value pairs
      */
     public void setSession(Map<String, String> session) {
@@ -97,8 +87,6 @@ public class ShibbolethPrincipal implements Principal, Serializable {
     
     /**
      * Return the Sample username for this <code>ShibbolethPrincipal</code>.
-     *
-     * <p>
      *
      * @param key The key to be inserted in the <code>session</code> map
      * @param value The value of the provided key to be inserted in the <code>session</code> map
@@ -110,8 +98,6 @@ public class ShibbolethPrincipal implements Principal, Serializable {
     /**
      * Return the Sample username for this <code>ShibbolethPrincipal</code>.
      *
-     * <p>
-     *
      * @param key The key to be searched in the <code>session<code> map
      * @return The value of the provided key or <code>null</code> if the key is not found
      */
@@ -122,8 +108,6 @@ public class ShibbolethPrincipal implements Principal, Serializable {
     
     /**
      * Return a String with the content of the session for this <code>ShibbolethPrincipal</code>.
-     *
-     * <p>
      *
      * @return A string with all values in the <code>session</code> map
      */
@@ -138,8 +122,6 @@ public class ShibbolethPrincipal implements Principal, Serializable {
     /**
      * Return a string representation of this <code>ShibbolethPrincipal</code>.
      *
-     * <p>
-     *
      * @return a string representation of this <code>ShibbolethPrincipal</code>.
      */
     public String toString() {
@@ -152,13 +134,8 @@ public class ShibbolethPrincipal implements Principal, Serializable {
      * <code>ShibbolethPrincipal</code> and the two SamplePrincipals
      * have the same username.
      *
-     * <p>
-     *
-     * @param o Object to be compared for equality with this
-     *		<code>ShibbolethPrincipal</code>.
-     *
-     * @return true if the specified Object is equal equal to this
-     *		<code>ShibbolethPrincipal</code>.
+     * @param o Object to be compared for equality with this <code>ShibbolethPrincipal</code>.
+     * @return true if the specified Object is equal equal to this <code>ShibbolethPrincipal</code>.
      */
     public boolean equals(Object o) {
     	if (o == null) return false;
@@ -171,8 +148,6 @@ public class ShibbolethPrincipal implements Principal, Serializable {
  
     /**
      * Return a hash code for this <code>ShibbolethPrincipal</code>.
-     *
-     * <p>
      *
      * @return a hash code for this <code>ShibbolethPrincipal</code>.
      */

@@ -32,25 +32,49 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Object representing an HTTP Page opened from a web server.
+ * 
+ * @version 1.0, 06/06/2012
+ */
 public class HTTPPage {
 
 	private int returnCode = -1;
 	private Map<String, String> headerFields = null;
 	private List<String> bodyRows = null;
-	
+
+	/**
+	 * Empty constructor which initializes local variables.
+	 */
 	public HTTPPage() {
 		headerFields = new HashMap<String, String>();
 		bodyRows = new ArrayList<String>();
 	}
 	
+	/**
+	 * Getter for the HTTP return code
+	 * 
+	 * @return the HTTP return code
+	 */
 	public int getReturnCode() {
 		return returnCode;
 	}
 
+	/**
+	 * Setter for the HTTP return code
+	 * 
+	 * @param returnCode the HTTP return code
+	 */
 	public void setReturnCode(int returnCode) {
 		this.returnCode = returnCode;
 	}
 	
+	/**
+	 * Getter for an HTTP header field
+	 * 
+	 * @param fieldName the header field name
+	 * @return the HTTP header field value
+	 */
 	public String getHeaderField(String fieldName) {
 		if (headerFields != null && headerFields.containsKey(fieldName)) {
 			return headerFields.get(fieldName);
@@ -59,14 +83,31 @@ public class HTTPPage {
 		return null;
 	}
 	
-	public void addHeaderField(String fieldName, String fieldValues) {
-		headerFields.put(fieldName, fieldValues);
+	/**
+	 * Function to add an header field to the header of the web page
+	 * 
+	 * @param fieldName the name of the header field
+	 * @param fieldValue the value of the header field
+	 */
+	public void addHeaderField(String fieldName, String fieldValue) {
+		headerFields.put(fieldName, fieldValue);
 	}
 	
+	/**
+	 * Function to add a row to the body object of the page
+	 * 
+	 * @param bodyRow String containing the row to be added to the body object
+	 */
 	public void addBodyRow(String bodyRow) {
 		bodyRows.add(bodyRow);
 	}
 	
+	/**
+	 * Function to retrieve all body rows for the opened page
+	 * 
+	 * @return A <code>List</code> of <code>String</code> containing all the
+	 * rows of the body of the web page
+	 */
 	public List<String> getBodyRows() {
 		return bodyRows;
 	}

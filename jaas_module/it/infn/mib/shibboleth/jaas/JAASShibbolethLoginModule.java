@@ -27,6 +27,7 @@
 
 package it.infn.mib.shibboleth.jaas;
 
+import it.infn.mib.shibboleth.jaas.impl.HTTPException;
 import it.infn.mib.shibboleth.jaas.impl.HTTPMethods;
 import it.infn.mib.shibboleth.jaas.impl.HTTPPage;
 
@@ -167,13 +168,19 @@ public class JAASShibbolethLoginModule implements LoginModule {
 		    System.err.println();
 		}
 
-		page = HTTPMethods.getUrl(url, username, new String(password), sslCheck, trustStore, trustStorePassword);
-		if (page.getReturnCode() == HttpURLConnection.HTTP_OK) {
-		    // authentication succeeded!!!
-		    if (debug) System.err.println("[SampleLoginModule] authentication succeeded");
-		    succeeded = true;
-		    return true;
-		} else {
+		try {
+			page = HTTPMethods.getUrl(url, username, new String(password), sslCheck, trustStore, trustStorePassword);
+			if (page.getReturnCode() == HttpURLConnection.HTTP_OK) {
+				// authentication succeeded!!!
+				if (debug) System.err.println("[SampleLoginModule] authentication succeeded");
+				succeeded = true;
+				return true;
+			}
+			
+			throw new HTTPException("Returned page has return code = " + page.getReturnCode());
+		}
+		catch (HTTPException e) {
+			if (debug) System.err.println(e.toString());
 		    // authentication failed -- clean out state
 		    if (debug) System.err.println("[SampleLoginModule] authentication failed");
 		    succeeded = false;

@@ -36,6 +36,8 @@ import javax.security.auth.login.LoginException;
 
 /**
  * Test class that executes a login with the Shibboleth auth module.
+ * 
+ * @version 1.0, 06/06/2012
  */
 public class LoginMain {
 

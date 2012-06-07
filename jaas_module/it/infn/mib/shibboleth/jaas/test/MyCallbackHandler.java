@@ -39,7 +39,9 @@ import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 
 /**
- * Default callback handler that prompts the user to inser the required data.
+ * Default callback handler that prompts the user to insert the required data.
+ * 
+ * @version 1.0, 06/06/2012
  */
 public class MyCallbackHandler implements CallbackHandler {
     
@@ -47,6 +49,8 @@ public class MyCallbackHandler implements CallbackHandler {
 	 * Invoke an array of Callbacks.
 	 * 
 	 * @param callbacks The array of callbacks available
+	 * @exception IOException if there is an error reading from console.
+	 * @exception UnsupportedCallbackException if the callback throws an error. 
 	 */
     public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
     	for (int i = 0; i < callbacks.length; i++) {
@@ -67,6 +71,7 @@ public class MyCallbackHandler implements CallbackHandler {
 	 * @param masquered A boolean value indicating if the input of the user
 	 * must be masquered on the console or not.
 	 * @return The line of text read.
+	 * @exception IOException if there is an error reading from console.
 	 */
     public static String readLine(String prompt, boolean masquered) throws IOException {
     	
