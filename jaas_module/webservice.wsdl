@@ -41,7 +41,7 @@
 	<service name="BackendService">
 		<documentation />
 		<port name="BackendPort" binding="tns:BackendBinding">
-			<soap:address location="https://cloud-mi-03.mib.infn.it/secure/webservice.php" />
+			<soap:address location="https://server.hostname/webservice" />
 		</port>
 	</service>
 </definitions>
