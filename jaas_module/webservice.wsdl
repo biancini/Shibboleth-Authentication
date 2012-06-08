@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+
+<definitions name="Backend" targetNamespace="urn:Backend"
+			 xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+			 xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+			 xmlns:tns="urn:Backend"
+			 xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+			 xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+			 xmlns="http://schemas.xmlsoap.org/wsdl/">
+			 
+	<types xmlns="http://schemas.xmlsoap.org/wsdl/"> </types>
+	
+	<message name="oncallRequest">
+		<part name="name" type="xsd:string" />
+	</message>
+	
+	<message name="oncallResponse">
+		<part name="salutation" type="xsd:string" />
+	</message>
+	
+	<portType name="BackendPort">
+		<operation name="oncall">
+			<input message="tns:oncallRequest" />
+			<output message="tns:oncallResponse" />
+		</operation>
+	</portType>
+	
+	<binding name="BackendBinding" type="tns:BackendPort">
+		<soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http" />
+		<operation name="oncall">
+			<soap:operation soapAction="http://schemas.xmlsoap.org/soap/envelope/#Backend#oncall" />
+			<input>
+				<soap:body use="encoded" namespace="http://schemas.xmlsoap.org/soap/envelope/" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</input>
+			<output>
+				<soap:body use="encoded" namespace="http://schemas.xmlsoap.org/soap/envelope/" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</output>
+		</operation>
+	</binding>
+	
+	<service name="BackendService">
+		<documentation />
+		<port name="BackendPort" binding="tns:BackendBinding">
+			<soap:address location="https://cloud-mi-03.mib.infn.it/secure/webservice.php" />
+		</port>
+	</service>
+</definitions>

@@ -43,7 +43,7 @@ foreach (explode(";", $cookies) as $curcookie) {
         if (strpos($curcookie, "=") !== false) {
                 list($cookiename, $cookieval) = explode("=", trim($curcookie));
                 if (strpos($cookiename, "_shibsession_") !== false) {
-                        print "Shib_Session_Unique=".trim(str_replace("_shibsession_", "", $cookiename)."\n");
+                        print "Shib-Session-Unique=".trim(str_replace("_shibsession_", "", $cookiename)."\n");
                 }
         }
 }

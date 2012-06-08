@@ -125,7 +125,7 @@ public class HTTPMethods {
 			
 			// Install the all-trusting trust manager
 		    final SSLContext sslContext = SSLContext.getInstance("SSL");
-		    sslContext.init( null, trustAllCerts, new java.security.SecureRandom() );
+		    sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
 		    // Create an ssl socket factory with our all-trusting manager
 		    final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 		    

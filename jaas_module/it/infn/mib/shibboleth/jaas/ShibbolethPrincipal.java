@@ -77,6 +77,15 @@ public class ShibbolethPrincipal implements Principal, Serializable {
     }
     
     /**
+     * Return the session for this <code>ShibbolethPrincipal</code>.
+     *
+     * @return the session for this <code>ShibbolethPrincipal</code>
+     */
+    public Map<String, String> getSession() {
+    	return session;
+    }
+    
+    /**
      * Sets the session for this <code>ShibbolethPrincipal</code>.
      *
      * @param session The map with the session key-value pairs

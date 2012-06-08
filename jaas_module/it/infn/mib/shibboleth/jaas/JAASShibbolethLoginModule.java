@@ -34,6 +34,7 @@ import it.infn.mib.shibboleth.jaas.impl.HTTPPage;
 import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.Map;
+import java.lang.Boolean;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
@@ -75,31 +76,31 @@ public class JAASShibbolethLoginModule implements LoginModule {
 	private String trustStorePassword = null;
 	
 	private String username = null;
-    private char[] password = null;
-    private ShibbolethPrincipal userPrincipal = null;
-    private String sessUsername = null;
+	private char[] password = null;
+	private ShibbolethPrincipal userPrincipal = null;
+	private String sessUsername = null;
     
-    private boolean succeeded = false;
-    private boolean commitSucceeded = false;
-    private HTTPPage page = null;
+	private boolean succeeded = false;
+	private boolean commitSucceeded = false;
+	private HTTPPage page = null;
 
-    /**
-     * Initialize this <code>LoginModule</code>.
-     *
-     * <p>
-     *
-     * @param subject the <code>Subject</code> to be authenticated. <p>
-     *
-     * @param callbackHandler a <code>CallbackHandler</code> for communicating
-     *			with the end user (prompting for user names and
-     *			passwords, for example). <p>
-     *
-     * @param sharedState shared <code>LoginModule</code> state. <p>
-     *
-     * @param options options specified in the login
-     *			<code>Configuration</code> for this particular
-     *			<code>LoginModule</code>.
-     */
+	/**
+	 * Initialize this <code>LoginModule</code>.
+	 *
+	 * <p>
+	 *
+	 * @param subject the <code>Subject</code> to be authenticated. <p>
+	 *
+	 * @param callbackHandler a <code>CallbackHandler</code> for communicating
+	 *			with the end user (prompting for user names and
+	 *			passwords, for example). <p>
+	 *
+	 * @param sharedState shared <code>LoginModule</code> state. <p>
+	 *
+	 * @param options options specified in the login
+	 *			<code>Configuration</code> for this particular
+	 *			<code>LoginModule</code>.
+	 */
 	@Override
 	public void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options) {
 		this.subject = subject;
@@ -121,18 +122,18 @@ public class JAASShibbolethLoginModule implements LoginModule {
 	}
 	
 	/**
-     * Authenticate the user by prompting for a user name and password.
-     *
-     * <p>
-     *
-     * @return true in all cases since this <code>LoginModule</code>
-     *		should not be ignored.
-     *
-     * @exception FailedLoginException if the authentication fails. <p>
-     *
-     * @exception LoginException if this <code>LoginModule</code>
-     *		is unable to perform the authentication.
-     */
+	 * Authenticate the user by prompting for a user name and password.
+	 *
+	 * <p>
+	 *
+	 * @return true in all cases since this <code>LoginModule</code>
+	 *		should not be ignored.
+	 *
+	 * @exception FailedLoginException if the authentication fails. <p>
+	 *
+	 * @exception LoginException if this <code>LoginModule</code>
+	 *		is unable to perform the authentication.
+	 */
 	@Override
 	public boolean login() throws LoginException {
 		// prompt for a user name and password
@@ -171,41 +172,45 @@ public class JAASShibbolethLoginModule implements LoginModule {
 		try {
 			page = HTTPMethods.getUrl(url, username, new String(password), sslCheck, trustStore, trustStorePassword);
 			if (page.getReturnCode() == HttpURLConnection.HTTP_OK) {
-				// authentication succeeded!!!
-				if (debug) System.err.println("[SampleLoginModule] authentication succeeded");
-				succeeded = true;
-				return true;
+				for (String curRow : page.getBodyRows()) {
+					if (curRow.startsWith("authenticated") && new Boolean(curRow.replace("authenticated=", "").trim()).booleanValue()) {
+						// authentication succeeded!!!
+						if (debug) System.err.println("[SampleLoginModule] authentication succeeded");
+						succeeded = true;
+						return true;
+					}
+				}
 			}
 			
 			throw new HTTPException("Returned page has return code = " + page.getReturnCode());
 		}
 		catch (HTTPException e) {
 			if (debug) System.err.println(e.toString());
-		    // authentication failed -- clean out state
-		    if (debug) System.err.println("[SampleLoginModule] authentication failed");
-		    succeeded = false;
-		    username = null;
+			// authentication failed -- clean out state
+			if (debug) System.err.println("[SampleLoginModule] auth.entication failed");
+			succeeded = false;
+			username = null;
 		    
-		    for (int i = 0; i < password.length; i++) password[i] = ' ';
-		    password = null;
+			for (int i = 0; i < password.length; i++) password[i] = ' ';
+			password = null;
 		    
-		    throw new FailedLoginException("Unable to verify username/password.");
+			throw new FailedLoginException("Unable to verify username/password.");
 		}
 	}
 
 	/**
-     * Logout the user.
-     *
-     * <p> This method removes the <code>ShibbolethPrincipal</code>
-     * that was added by the <code>commit</code> method.
-     *
-     * <p>
-     *
-     * @exception LoginException if the logout fails.
-     *
-     * @return true in all cases since this <code>ShibbolethPrincipal</code>
-     *          should not be ignored.
-     */
+	 * Logout the user.
+	 *
+	 * <p> This method removes the <code>ShibbolethPrincipal</code>
+	 * that was added by the <code>commit</code> method.
+	 *
+	 * <p>
+	 *
+	 * @exception LoginException if the logout fails.
+	 *
+	 * @return true in all cases since this <code>ShibbolethPrincipal</code>
+	 *          should not be ignored.
+	 */
 	@Override
 	public boolean logout() throws LoginException {
 		subject.getPrincipals().remove(userPrincipal);
@@ -222,23 +227,23 @@ public class JAASShibbolethLoginModule implements LoginModule {
 	}
 	
 	/**
-     * <p> This method is called if the LoginContext's
-     * overall authentication failed.
-     * (the relevant REQUIRED, REQUISITE, SUFFICIENT and OPTIONAL LoginModules
-     * did not succeed).
-     *
-     * <p> If this LoginModule's own authentication attempt
-     * succeeded (checked by retrieving the private state saved by the
-     * <code>login</code> and <code>commit</code> methods),
-     * then this method cleans up any state that was originally saved.
-     *
-     * <p>
-     *
-     * @exception LoginException if the abort fails.
-     *
-     * @return false if this LoginModule's own login and/or commit attempts
-     *		failed, and true otherwise.
-     */
+	 * <p> This method is called if the LoginContext's
+	 * overall authentication failed.
+	 * (the relevant REQUIRED, REQUISITE, SUFFICIENT and OPTIONAL LoginModules
+	 * did not succeed).
+	 *
+	 * <p> If this LoginModule's own authentication attempt
+	 * succeeded (checked by retrieving the private state saved by the
+	 * <code>login</code> and <code>commit</code> methods),
+	 * then this method cleans up any state that was originally saved.
+	 *
+	 * <p>
+	 *
+	 * @exception LoginException if the abort fails.
+	 *
+	 * @return false if this LoginModule's own login and/or commit attempts
+	 *		failed, and true otherwise.
+	 */
 	@Override
 	public boolean abort() throws LoginException {
 		if (succeeded == false) {
@@ -261,27 +266,27 @@ public class JAASShibbolethLoginModule implements LoginModule {
 	}
 
 	/**
-     * <p> This method is called if the LoginContext's
-     * overall authentication succeeded
-     * (the relevant REQUIRED, REQUISITE, SUFFICIENT and OPTIONAL LoginModules
-     * succeeded).
-     *
-     * <p> If this LoginModule's own authentication attempt
-     * succeeded (checked by retrieving the private state saved by the
-     * <code>login</code> method), then this method associates a
-     * <code>ShibbolethPrincipal</code>
-     * with the <code>Subject</code> located in the
-     * <code>LoginModule</code>.  If this LoginModule's own
-     * authentication attempted failed, then this method removes
-     * any state that was originally saved.
-     *
-     * <p>
-     *
-     * @exception LoginException if the commit fails.
-     *
-     * @return true if this LoginModule's own login and commit
-     *		attempts succeeded, or false otherwise.
-     */
+	 * <p> This method is called if the LoginContext's
+	 * overall authentication succeeded
+	 * (the relevant REQUIRED, REQUISITE, SUFFICIENT and OPTIONAL LoginModules
+	 * succeeded).
+	 *
+	 * <p> If this LoginModule's own authentication attempt
+	 * succeeded (checked by retrieving the private state saved by the
+	 * <code>login</code> method), then this method associates a
+	 * <code>ShibbolethPrincipal</code>
+	 * with the <code>Subject</code> located in the
+	 * <code>LoginModule</code>.  If this LoginModule's own
+	 * authentication attempted failed, then this method removes
+	 * any state that was originally saved.
+	 *
+	 * <p>
+	 *
+	 * @exception LoginException if the commit fails.
+	 *
+	 * @return true if this LoginModule's own login and commit
+	 *		attempts succeeded, or false otherwise.
+	 */
 	@Override
 	public boolean commit() throws LoginException {
 		if (succeeded == false) {
