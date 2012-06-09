@@ -7,7 +7,7 @@ config.readfp(open('shibauth.config'))
 url = config.get('HTTP params', 'url')
 sslcheck = config.getboolean('HTTP params', 'sslcheck')
 sess_username = config.get('HTTP params', 'sess_username')
-debug = config.get('HTTP params', 'debug')
+debug = config.getboolean('HTTP params', 'debug')
 
 def login(username, password=None):
     http_methods.debug = debug

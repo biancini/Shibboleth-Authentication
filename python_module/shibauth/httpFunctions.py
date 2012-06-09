@@ -1,5 +1,6 @@
 import sys
-import urllib2, urllib
+import urllib2
+import urllib
 import cookielib
 import base64
 
@@ -44,7 +45,6 @@ class http_methods():
         else:
   	    opener = urllib2.build_opener(no_redirect_handler(), urllib2.HTTPCookieProcessor(http_methods.cookies))
 
-        data = urllib.urlencode({})
         req = urllib2.Request(url_to_read)
         resp = opener.open(req)
 
