@@ -60,7 +60,7 @@ public class BackendServiceLocator extends Service implements BackendService {
         return getBackendPort(endpoint);
     }
 
-    public BackendPort getBackendPort(URL portAddress) throws javax.xml.rpc.ServiceException {
+    public BackendPort getBackendPort(URL portAddress) throws ServiceException {
         try {
             BackendBindingStub _stub = new BackendBindingStub(portAddress, this);
             _stub.setPortName(getBackendPortWSDDServiceName());

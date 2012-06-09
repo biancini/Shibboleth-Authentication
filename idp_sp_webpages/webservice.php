@@ -10,12 +10,12 @@ class Backend
 
      function Backend() {
       $this->__dispatch_map['oncall'] =
-        array('in' => array('name' => 'string'),
+        array('in' => array('loggeduser' => 'string'),
              'out' => array('salutation' => 'string'));
      }
 
-     function oncall($name)  {
-       return "Hello ".$name." from webservice!";
+     function oncall($loggeduser)  {
+       return "Hello ".$loggeduser." from webservice!";
      }
 }
 

@@ -41,9 +41,9 @@ public class BackendPortProxy implements BackendPort {
 		return backendPort;
 	}
 
-	public String oncall(java.lang.String name) throws RemoteException {
+	public String oncall(String loggeduser) throws RemoteException {
 		if (backendPort == null) _initBackendPortProxy();
-		return backendPort.oncall(name);
+		return backendPort.oncall(loggeduser);
 	}
 
 }

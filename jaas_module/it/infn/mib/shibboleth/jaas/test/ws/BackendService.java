@@ -17,6 +17,6 @@ public interface BackendService extends Service {
     public String getBackendPortAddress();
 
     public BackendPort getBackendPort() throws ServiceException;
-    public BackendPort getBackendPort(URL portAddress) throws javax.xml.rpc.ServiceException;
+    public BackendPort getBackendPort(URL portAddress) throws ServiceException;
     
 }

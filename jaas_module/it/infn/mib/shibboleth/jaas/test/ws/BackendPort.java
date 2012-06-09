@@ -11,5 +11,5 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 
 public interface BackendPort extends Remote {
-    public String oncall(String name) throws RemoteException;
+    public String oncall(String loggeduser) throws RemoteException;
 }

@@ -35,7 +35,7 @@ public class BackendBindingStub extends Stub implements BackendPort {
 		ParameterDesc param;
 		oper = new OperationDesc();
 		oper.setName("oncall");
-		param = new ParameterDesc(new QName("", "name"), ParameterDesc.IN, new QName("http://www.w3.org/2001/XMLSchema", "string"), String.class, false, false);
+		param = new ParameterDesc(new QName("", "loggeduser"), ParameterDesc.IN, new QName("http://www.w3.org/2001/XMLSchema", "string"), String.class, false, false);
 		oper.addParameter(param);
 		oper.setReturnType(new QName("http://www.w3.org/2001/XMLSchema", "string"));
 		oper.setReturnClass(String.class);

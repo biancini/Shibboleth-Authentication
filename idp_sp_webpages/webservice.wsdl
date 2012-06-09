@@ -11,7 +11,7 @@
 	<types xmlns="http://schemas.xmlsoap.org/wsdl/"> </types>
 	
 	<message name="oncallRequest">
-		<part name="name" type="xsd:string" />
+		<part name="loggeduser" type="xsd:string" />
 	</message>
 	
 	<message name="oncallResponse">
@@ -41,7 +41,7 @@
 	<service name="BackendService">
 		<documentation />
 		<port name="BackendPort" binding="tns:BackendBinding">
-			<soap:address location="https://server.hostname/webservice" />
+			<soap:address location="https://cloud-mi-03.mib.infn.it/secure/webservice.php" />
 		</port>
 	</service>
 </definitions>
