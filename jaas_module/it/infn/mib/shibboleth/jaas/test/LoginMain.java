@@ -39,6 +39,7 @@ import java.util.Map;
 
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
+import javax.xml.rpc.ServiceException;
 
 import org.apache.axis.AxisProperties;
 import org.apache.axis.EngineConfiguration;
@@ -97,7 +98,7 @@ public class LoginMain {
 		    loc.setEngine(new AxisClient(clientConfig));
 		    binding = (BackendBindingStub) loc.getBackendPort();
 		}
-		catch (javax.xml.rpc.ServiceException jre) {
+		catch (ServiceException jre) {
 			if (jre.getLinkedCause() != null) jre.getLinkedCause().printStackTrace();
 			throw new Exception("JAX-RPC ServiceException caught: " + jre);
 		}
@@ -110,7 +111,7 @@ public class LoginMain {
 		System.out.println("Trying to call webservice using SSO with obtained credentials.");
 		
 		try {
-			String wsEndpoint = "https://server.hostname/webservice";
+			String wsEndpoint = "https://cloud-mi-03.mib.infn.it/secure/webservice.php";
 			AxisProperties.setProperty("axis.socketSecureFactory", "org.apache.axis.components.net.SunFakeTrustSocketFactory");
 			
 			Map<String, String> cookies = new HashMap<String, String>();
