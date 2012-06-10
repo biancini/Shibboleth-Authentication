@@ -1,37 +1,17 @@
 import shibauth
 import getpass
-import urllib2
-import urlparse
-import suds
 import logging
-import cookielib
+from ZSI.client import Binding
 
 def call_webservice(loggeduser, cookies):
     print "Trying to call webservice using SSO with obtained credentials."
-    url = 'https://server.honstname/webservice.php?wsdl'
+    url = 'https://server.hostname/webservice.php'
 
-    logging.basicConfig(level=logging.INFO)
-    #logging.getLogger('cookielib').setLevel(logging.DEBUG)
-    #cookielib.debug = True
-    #logging.getLogger('suds.client').setLevel(logging.DEBUG)
-
-    cookiejar = cookielib.CookieJar()
+    client = Binding(url=url)
     for (key, value) in cookies.items():
-        cookie = cookielib.Cookie(version=0, name=key, value=value, port=None, port_specified=False,
-                                  domain=urlparse.urlparse(url)[1], domain_specified=True, domain_initial_dot=False,
-                                  path='/', path_specified=True, secure=False, expires=None, discard=True,
-                                  comment=None, comment_url=None, rest=None, rfc2109=True)
-        cookiejar.set_cookie(cookie)
-    
-    transport = suds.transport.https.HttpTransport()
-    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookiejar))
-    transport.urlopener = opener
-    client = suds.client.Client(url, transport=transport, cache=None)
+        client.cookies[key] = value
 
-    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor())
-    client.options.transport.cookiejar = cookiejar
-
-    print client.service.BackendPort.oncall(loggeduser)
+    print client.oncall(loggeduser)['return']
 
 if __name__ == "__main__":
     username = raw_input('Enter your username: ')
