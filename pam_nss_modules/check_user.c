@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
 
       if (call_ws == 1)
       {
-        const char *cur_var_username = pam_getenv(pamh, "eduPersonPrincipalName");
+        char *cur_var_username = (char *)pam_getenv(pamh, "eduPersonPrincipalName");
         fprintf(stdout, "\nCall webservice with SSO credentials obtained via Shibboleth login:\n");
         call_webservice(cur_var_username, cur_var_unique, cur_var_id);
       }
