@@ -1,0 +1,52 @@
+\label{sec:introduction}
+\section{Introduction}
+User authentication and user authorization are main tasks needed to guarantee security in IT environments.
+One important requirement of such security solutions, is that they must be as transparent as possibile.
+In systems where resources sit on different systems and environments, which are a common reality for the users, a solution must be found to eliminate the need for each system
+to create and manage its own credential system.
+For such reason single sign-on (SSO, as described in \cite{Shaer-1995}) systems have been designed and implemented to achieve such goal.\\
+\\
+One of the most widespread SSO software package is Shibboleth \cite{Morgan-2004}, which implements authentication and authorization over network resources with a federated
+approach.
+Shibboleth, designed and implemented by Internet2, provides an effective solution for secure multi-organizational access to web resources.
+It implements widely used federated identity standards, principally OASIS' Security Assertion Markup Language (SAML \cite{Cantor-2005}), to provide a federated single
+sign-on and attribute exchange framework.
+Shibboleth also provides extended privacy functionality allowing the browser user and their home site to control the attributes released to each application.\\
+\\
+Using Shibboleth-enabled access simplifies management of identity and permissions for organizations supporting users and applications.
+Shibboleth is developed in an open and participatory environment and is freely available.
+For these reason it has formed the heart of many solutions for single sign-on and Authentication \& Authorization Infrastructures (AAI) in real identity federations.\\
+\\
+The architecture of Shibboleth, described in \cite{Erdos-2005}, identifies two main components: Identity Providers (IdPs) which authenticate the users and supply user 
+authorization attributes; the Service Providers (SPs) which consume user attributes and provide access to the secure contents.\\
+The communication excanges between the user, the IdP and the SP are all base don SAML assertions and transit over HTTP channels.
+This implementation architecture permits Shibboleth to works seamlessly inside user web-browsers.
+However, this approach is strongly web-centric, and for this reason does not adapt well to provide SSO authentication to non web-based application.\\
+\\
+In this article a solution is presented to permit Shibboleth authentication for non web-based application.
+Different implementations will be described showing how to integrate the shibboleth AAI mechanisms inside several client applications (Linux platform, Java JAAS, Python).
+The rest of this paper is organized as follows: the first section contains a quick overview of related works; the second section will present the architecture of
+the solution presented with this article; the third section will present some details about the technical implementation in the different software platform; the last
+section presents conclusions and future works.
+
+\label{sec:relatedworks}
+\section{Related works}
+
+\label{sec:architecture}
+\section{Architecture}
+
+\label{sec:implementations}
+\section{Implementations}
+
+\label{sec:pamnss}
+\subsection{PAM and NSS modules}
+
+\label{sec:jaas}
+\subsection{JAAS module}
+
+\label{sec:python}
+\subsection{Python}
+
+\label{sec:conclusion}
+\section{Conclusion and future works}
+
