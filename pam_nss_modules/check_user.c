@@ -20,17 +20,16 @@ static struct pam_conv conv = {
     NULL
 };
 
-void call_webservice(const char *cookie_key, const char *cookie_value)
+void call_webservice(char *loggeduser, const char *cookie_key, const char *cookie_value)
 {
     char *endpoint = "https://server.hostname/webservice.php";
     struct soap *soap = soap_new();
     if (soap_ssl_client_context(soap, SOAP_SSL_NO_AUTHENTICATION, NULL, NULL, NULL, NULL, NULL)) 
     { 
-      soap_print_fault(soap, stderr); 
-      exit(1); 
+    /  soap_print_fault(soap, stderr); 
+     exit(1); 
     } 
 
-    char *loggeduser = "Andrea C";
     char **salutation = (char **)malloc(sizeof(char *));
 
     char *new_cookie_key = (char *) malloc(strlen(cookie_key)+14);
@@ -96,8 +95,9 @@ int main(int argc, char *argv[])
 
       if (call_ws == 1)
       {
+        const char *cur_var_username = pam_getenv(pamh, "eduPersonPrincipalName");
         fprintf(stdout, "\nCall webservice with SSO credentials obtained via Shibboleth login:\n");
-        call_webservice(cur_var_unique, cur_var_id);
+        call_webservice(cur_var_username, cur_var_unique, cur_var_id);
       }
       else 
       {
