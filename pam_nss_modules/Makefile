@@ -9,8 +9,8 @@ clean:
 	$(RM) check_user pam_http.so *.o libnss_shib.so.2
 pam_http.so: pam_http.c netcurl.c
 	$(CC) $(CFLAGS) -fPIC -shared -Xlinker -x -o $@ pam_http.c netcurl.c -lcurl
-check_user: check_user.c
-	$(CC) $(CFLAGS) -o $@ $< -lpam -lpam_misc
+check_user: check_user.c soapC.c soapClient.c
+	$(CC) $(CFLAGS) -o $@ check_user.c soapC.c soapClient.c -lpam -lpam_misc -lgsoapssl -lssl
 libnss_shib.so.2: libnss_shib.c netcurl.c
 	$(CC) $(CFLAGS) -fPIC -shared -Wl,-soname,libnss_shib.so.2 -Xlinker -x -o $@ libnss_shib.c netcurl.c -lcurl -lconfig
 

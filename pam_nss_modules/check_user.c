@@ -20,23 +20,22 @@ static struct pam_conv conv = {
     NULL
 };
 
-void call_webservice(char *loggeduser, const char *cookie_key, const char *cookie_value)
+void call_webservice(char *loggeduser, const char *shib_unique, const char *shib_id)
 {
     char *endpoint = "https://server.hostname/webservice.php";
     struct soap *soap = soap_new();
     if (soap_ssl_client_context(soap, SOAP_SSL_NO_AUTHENTICATION, NULL, NULL, NULL, NULL, NULL)) 
     { 
-    /  soap_print_fault(soap, stderr); 
-     exit(1); 
+      soap_print_fault(soap, stderr); 
+      exit(1); 
     } 
 
     char **salutation = (char **)malloc(sizeof(char *));
 
-    char *new_cookie_key = (char *) malloc(strlen(cookie_key)+14);
-    sprintf(new_cookie_key, "_shibsession_%s", cookie_key);
+    char *cookie_key = (char *) malloc(strlen(shib_unique)+14);
+    sprintf(cookie_key, "_shibsession_%s", shib_unique);
 
-    soap->cookies = soap_set_cookie(soap, new_cookie_key, cookie_value, NULL, NULL);
-    soap_set_cookie_expire(soap, new_cookie_key, 10, NULL, NULL);
+    soap->cookies = soap_set_cookie(soap, cookie_key, shib_id, NULL, NULL);
 
     #ifdef DEBUG
     fprintf(stderr, "Passing the following cookie to WS:\n");
@@ -95,9 +94,8 @@ int main(int argc, char *argv[])
 
       if (call_ws == 1)
       {
-        char *cur_var_username = (char *)pam_getenv(pamh, "eduPersonPrincipalName");
         fprintf(stdout, "\nCall webservice with SSO credentials obtained via Shibboleth login:\n");
-        call_webservice(cur_var_username, cur_var_unique, cur_var_id);
+        call_webservice((char *)authenticated_user, cur_var_unique, cur_var_id);
       }
       else 
       {
