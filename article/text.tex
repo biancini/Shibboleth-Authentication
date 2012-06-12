@@ -2,9 +2,11 @@
 \section{Introduction}
 User authentication and user authorization are main tasks needed to guarantee security in IT environments.
 One important requirement of such security solutions, is that they must be as transparent as possibile.
-In systems where resources sit on different systems and environments, which are a common reality for the users, a solution must be found to eliminate the need for each system
-to create and manage its own credential system.
-For such reason single sign-on (SSO, as described in \cite{Shaer-1995}) systems have been designed and implemented to achieve such goal.\\
+Current user applications, usually sit on different systems and environment.
+This requires a solution able to permit that each system is not required to create and manage its own credential system.
+For this reason single sign-on (SSO, as described in \cite{Shaer-1995}) systems have been designed and implemented.
+These systems have also a strong impact on users who don't need to perform multiple logins on different systems, but could be automatically identified by all the
+application they are using.\\
 \\
 One of the most widespread SSO software package is Shibboleth \cite{Morgan-2004}, which implements authentication and authorization over network resources with a federated
 approach.
@@ -13,24 +15,59 @@ It implements widely used federated identity standards, principally OASIS' Secur
 sign-on and attribute exchange framework.
 Shibboleth also provides extended privacy functionality allowing the browser user and their home site to control the attributes released to each application.\\
 \\
-Using Shibboleth-enabled access simplifies management of identity and permissions for organizations supporting users and applications.
+Using Shibboleth-enabled access simplifies the management of identity and permissions for organizations supporting either users or applications.
 Shibboleth is developed in an open and participatory environment and is freely available.
-For these reason it has formed the heart of many solutions for single sign-on and Authentication \& Authorization Infrastructures (AAI) in real identity federations.\\
+This open and collaborative nature has allowed Shibboleth to become the heart of many solutions for single sign-on and Authentication \& Authorization Infrastructures (AAI)
+in several identity federations.\\
 \\
 The architecture of Shibboleth, described in \cite{Erdos-2005}, identifies two main components: Identity Providers (IdPs) which authenticate the users and supply user 
-authorization attributes; the Service Providers (SPs) which consume user attributes and provide access to the secure contents.\\
+authorization attributes; Service Providers (SPs) which consume user attributes and provide access to the secure contents.\\
 The communication excanges between the user, the IdP and the SP are all base don SAML assertions and transit over HTTP channels.
 This implementation architecture permits Shibboleth to works seamlessly inside user web-browsers.
 However, this approach is strongly web-centric, and for this reason does not adapt well to provide SSO authentication to non web-based application.\\
 \\
 In this article a solution is presented to permit Shibboleth authentication for non web-based application.
-Different implementations will be described showing how to integrate the shibboleth AAI mechanisms inside several client applications (Linux platform, Java JAAS, Python).
+The architecture and the technical implementation of the solution will be described.
+As an example of possible uses of this work, different software implementations will be described showing how to integrate the shibboleth AAI mechanisms inside several
+client applications (Linux platform, Java JAAS, Python).\\
+\\
 The rest of this paper is organized as follows: the first section contains a quick overview of related works; the second section will present the architecture of
 the solution presented with this article; the third section will present some details about the technical implementation in the different software platform; the last
 section presents conclusions and future works.
 
 \label{sec:relatedworks}
 \section{Related works}
+To solve this problem of AAI integration between Shibboleth and non-web application the more general and wide approach is the Moonshot project (\cite{Howlett-2010}).
+This project aims explicitly to develop a single unifying technology for extending the benefits of federated identity to a broad range of non-Web services.
+The Moonshot project proposes a solution to the AAI problem very complete and articulated.\\
+It leverages different technologies such as Kerberos (a computer network authentication protocol which allows nodes communicating over a non-secure network to prove their
+identity to one another in a secure manner), the GSS library (Generic Security Services libraries for programs to access security services) and a Radius server (Remote
+Authentication Dial In User Service, a networking protocol that provides centralized Authentication, Authorization, and Accounting management).\\
+This solution is for sure very complete and trusthworty.
+It implies however a quite complex architecture and requires a lot of changes on client side, SPs and IdPs.
+This suggests a difficult introduction of this approach into real existing federations.\\
+\\
+The need to leverage Shibboleth identity federations in non-web application has been particularly felt in Grid Computing (\cite{Kesselman-1998}) services.
+In the field of research, in fact, in the last years strong investments have been done to build a global e-Infrastructure leveraging Grid Computing technologies.
+This infrastructure supports the execution of scientific computation and the storage of relevant research data.\\
+The grid, since its inception, has introduced specific solutions (inspired to the original article \cite{Foster-1998}) to security problems.
+The new Shibboleth SSO for web-application somehow lies next to the Grid AAI, thus the idea to integrate the two security systems is natural and potentially very beneficial.\\
+Due to the complexity of the Moonlite project, which would add to the intrinsic complexity of grid security schemas, different solutions have been adopted in this field.
+\\
+In grid environments, this problem has been approached with the goal to try and integrate the existing grid security infrastructures with Shibboleth mechanisms.
+These solutions, described in both articles \cite{Wang-2009} and \cite{Jensen-2007}, permit the users to transparently move between Shibboleth application and Grid
+environments using one single set of credentials.
+They work with specific software middlewares able to log in the user and then manage both the Shibboleth authentication assertions and the grid certificates used to access
+the different environments where applications sit.\\
+Solutions like those, are very interesting in that they really ease the user experience and provide effective results.
+However it must be noted that are well fit for the problem of integrating Shibboleth with grid security and can hardly be extended to other fields of application.
+They are not able to provide a solution for the AAI needs of non-web application not running on a grid environment.\\
+\\
+The approaches described show opposite characteristics.
+On one side a very complex and articulated mechanism has been proposed, on the other side very specific and poorly adaptable solutions have been proposed to solve pragmatic
+problems.\\
+In this paper a different approach will be presented.
+The proposed approach would try and address general problems of authentication, but will try to do it with few interventions on the requirements of SPs and IdPs.
 
 \label{sec:architecture}
 \section{Architecture}
