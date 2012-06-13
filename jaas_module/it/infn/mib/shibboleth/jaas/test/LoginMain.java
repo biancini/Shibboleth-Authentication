@@ -88,7 +88,7 @@ public class LoginMain {
 	 * @return the stub to call the webservice
 	 * @exception if some method goes an error
 	 */
-	public static BackendBindingStub getCookieTokenBinding(String wsEndpoint, Map<String,String> cookies) throws Exception {
+	private static BackendBindingStub getCookieTokenBinding(String wsEndpoint, Map<String,String> cookies) throws Exception {
 		BackendBindingStub binding = null;
 		
 		try {
@@ -107,8 +107,13 @@ public class LoginMain {
 		return binding;
 	}
 	
-	private static void callWebserviceSSO() {
-		System.out.println("Trying to call webservice using SSO with obtained credentials.");
+	/**
+	 * Function to call a webservice with Shibboleth authentication
+	 * 
+	 * @param args No arguments to be passed
+	 */
+	private static void callWebservice() {
+		System.out.println("Trying to call webservice using obtained credentials.");
 		
 		try {
 			String wsEndpoint = "https://cloud-mi-03.mib.infn.it/secure/webservice.php";
@@ -127,11 +132,11 @@ public class LoginMain {
 	}
 	
 	/**
-	 * Main method that executes authentication.
+	 * Function to login a user.
 	 * 
 	 * @param args No arguments to be passed
 	 */
-	public static void main(String[] args) {
+	private static void login() {
 		try {
 			LoginContext lc =  new LoginContext("Shibboleth", new MyCallbackHandler());
 			lc.login();
@@ -141,19 +146,66 @@ public class LoginMain {
 			for (Principal curPrincipal : lc.getSubject().getPrincipals()) {
 				if (curPrincipal instanceof ShibbolethPrincipal) {
 					loggedUser = ((ShibbolethPrincipal) curPrincipal).getName();
-					System.out.println("Username for logged user is: " + loggedUser);
-					
 					session = ((ShibbolethPrincipal) curPrincipal).getSession();
-					System.out.println("Printing session for logged in user: ");
-					System.out.print(((ShibbolethPrincipal) curPrincipal).printSession());
-					
-					callWebserviceSSO();
 				}
 			}
 		} catch (LoginException e) {
 			System.err.println("Error logging in user.");
 			e.printStackTrace();
 		}
+	}
+	
+	/**
+	 * Function to login a user.
+	 * 
+	 * @param args No arguments to be passed
+	 * @return true if the user session was found in environment, false otherwise
+	 */
+	private static boolean sso() {
+		String sessUsername = "eduPersonPrincipalName";
+		
+		// The environment variables should not contain the dash character
+		// so the login module may translate the dash with an underline symbol.
+		// Here do the opposite translation (replaceAll instructions).
+		loggedUser = System.getProperty(sessUsername.replaceAll("-", "_"));
+		String shibUnique = System.getProperty("Shib-Session-Unique".replaceAll("-", "_"));
+		String shibId = System.getProperty("Shib-Session-ID".replaceAll("-", "_"));
+		
+		if (loggedUser == null || shibUnique == null || shibId == null) {
+			System.err.println("Error retrieving user session from environment.");
+			return false;
+		}
+		
+		session = new HashMap<String, String>();
+		session.put("Shib-Session-Unique", shibUnique); 
+		session.put("Shib-Session-ID", shibId);
+		return true;
+	}
+	
+	/**
+	 * Main method that executes authentication or SSO.
+	 * 
+	 * @param args If -sso parameter is passed than tries to retrieve Shibboleth session from environment and don't ask for the
+	 * user to login again.
+	 */
+	public static void main(String[] args) {
+		boolean sso = false;
+		if (args != null) {
+			for (String curArg : args) {
+				if ("-sso".equals(curArg)) sso = true;
+			}
+		}
+		
+		if (!sso || !sso()) login();
+		
+		System.out.println("User logged in successfully.");
+		System.out.println("Username for logged user is: " + loggedUser);
+				
+		System.out.println("Printing session for logged in user: ");
+		for (String curKey : session.keySet())
+			System.out.println("[" + curKey + "] => " + session.get(curKey));
+		
+		callWebservice();
 	}
 
 }
