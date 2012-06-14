@@ -30,8 +30,16 @@ This implementation architecture permits Shibboleth to works seamlessly inside u
 However, this approach is strongly web-centric, and for this reason does not adapt well to provide SSO authentication to non web-based
 application.\\
 \\
-In this article a solution is presented to permit Shibboleth authentication for non web-based application.
-The architecture and the technical implementation of the solution will be described.
+In this article a solution is presented to permit Shibboleth authentication for non web-based applications.
+The traditional login scheme used by Shibboleth to authenticate users is implemented inside a web-borser.
+The user, when trying to log to a web resources, is redirected to the IdP to perform authentication and obtain authorization assertions via
+his session metadata.
+The use case implemented within this article solves the problem of authenticatin a user and retrieving his metadata information from Shibboleth
+without using a web-broser.
+This solution could be integrated in traditional client-based application (for instance application written in Java or Python) to obtain
+a secure way to manager user logins.\\
+\\
+This article will describe the architecture and the technical implementation of this authentication solution.
 As an example of possible uses of this work, different software implementations will be described showing how to integrate the shibboleth AAI
 mechanisms inside several client applications (Linux platform, Java JAAS, Python).\\
 \\
@@ -41,7 +49,8 @@ in the different software platform; the last section presents conclusions and fu
 
 \label{sec:relatedworks}
 \section{Related works}
-To solve this problem of AAI integration between Shibboleth and non-web application the more general and wide approach is the Moonshot project (\cite{Howlett-2010}).
+To solve this problem of AAI integration between Shibboleth and non-web application the more general and wide approach is the Moonshot
+project (\cite{Howlett-2010}).
 This project aims explicitly to develop a single unifying technology for extending the benefits of federated identity to a broad range of
 non-Web services.
 The Moonshot project proposes a solution to the AAI problem very complete and articulated.\\
@@ -66,8 +75,8 @@ been adopted in this field.
 \\
 In grid environments, this problem has been approached with the goal to try and integrate the existing grid security infrastructures with
 Shibboleth mechanisms.
-These solutions, described in both articles \cite{Wang-2009} and \cite{Jensen-2007}, permit the users to transparently move between Shibboleth application and Grid
-environments using one single set of credentials.
+These solutions, described in both articles \cite{Wang-2009} and \cite{Jensen-2007}, permit the users to transparently move between Shibboleth
+application and Grid environments using one single set of credentials.
 They work with specific software middlewares able to log in the user and then manage both the Shibboleth authentication assertions and the
 grid certificates used to access the different environments where applications sit.\\
 Solutions like those, are very interesting in that they really ease the user experience and provide effective results.
@@ -76,7 +85,8 @@ fields of application.
 They are not able to provide a solution for the AAI needs of non-web application not running on a grid environment.\\
 \\
 The approaches described show opposite characteristics.
-On one side a very complex and articulated mechanism has been proposed, on the other side very specific and poorly adaptable solutions havbeen proposed to solve pragmatic problems.\\
+On one side a very complex and articulated mechanism has been proposed, on the other side very specific and poorly adaptable solutions
+have been proposed to solve pragmatic problems.\\
 In this paper a different approach will be presented.
 The proposed approach would try and address general problems of authentication, but will try to do it with few interventions on the
 requirements of SPs and IdPs.
