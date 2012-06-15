@@ -186,6 +186,9 @@ has been able to provide a valid authentication or not.
 \item \texttt{pam\_sm\_setcred}: this function retrieves information to create a session for the user.
 Generally, an authentication module may have access to more information about a user than their authentication token.
 This function is used to make such information available to the application.
+The session values are obtained from the web page used to perform HTTP Basic authentication.
+As described in section \ref{sec:architecture}, this page contains in fact a list of key=value rows retrieving information from Shibboleth
+metadata and describing the logged user session.
 \item \texttt{pam\_sm\_acct\_mgmt}: this function performs the task of establishing whether the user is permitted to gain access at this time.
 This function gets called when the user has already been validated by an authentication module.
 This function checks for the returned page body of the HTTP target resources behind Shibboleth authentication to verify that the
@@ -195,9 +198,85 @@ This function checks for the returned page body of the HTTP target resources beh
 \item \texttt{pam\_sm\_chauthtok}: this function is used to (re-)set the authentication token of the user.
 This function is not implemented in the module realized for Shibboleth.
 In fact the PAM module realized is not able to modify user information on the IdP side but it is used only to chech user session and
-perform AAI.\\
-\\
+perform AAI.
 \end{itemize}
+
+This PAM module developed, can then be used to authenticate users in a common PAM chain.
+For example, modifying the file \texttt{/etc/pam.d/login} and modyfing with the config file in algorithm \ref{alg:pamconf}, it is
+possible to permit login to the linux machine using the Shibboleth credentials.\\
+The \texttt{pam\_http.so} module can be instatiated with some parameters.
+In particular, it is possible to specify the following parameters:
+\begin{itemize}
+\item url: specifies the URL of the page behind Shibboleth authentication on the SP that produces as output the data to be put in user
+session after login;
+\item sess\_username: specifies the field in the user session containing the username to be passed to the system for the logged in user;
+this name, in the standard linux process, can differ from the one used for login;
+\item sslcheck (optional): specifies whether the libcurl library has to verify the SSL certificate of the server when connecting via HTTPS;
+\item cafile (optional): specifies the name of a file, containing a CA public key, used by libcurl to verify the SSL certificate of the server
+when connecting via HTTPS.
+\end{itemize}
+
+\begin{algorithm}[t]
+\SetAlgoNoLine
+\texttt{auth     required       pam\_http.so url=https://servername.com/pam sess\_username=username}\\
+\texttt{account  required       pam\_http.so}\\
+\texttt{password required       pam\_permit.so}\\
+\texttt{session  required       pam\_http.so}
+\caption{PAM configuration to use the \texttt{pam\_http} module.}
+\label{alg:pamconf}
+\end{algorithm}
+
+To permit a linux system to user external directories for users and user groups, it is necessary to implement another module for a different
+library: the Name Service Switch (NSS, \cite{GNU-1987}).
+This library permits to define services for accessing different databases containing various information.
+In respect of the activites described in this article, the relevant databases are: \texttt{passwd}, the user dadatabase; and \texttt{group}
+a database with all user groups.\\
+\\
+The service implemented to integrate NSS with Shibboleth is a new servlet that has been deployed on the IdP.
+This servlet connects to the underlying authorization database (usually an LDAP database) and retrieves information about all users and groups
+that are recognized by that IdP.\\
+\\
+The NSS module implemented, than, had to implement the following functions:
+\begin{itemize}
+\item \texttt{\_nss\_shib\_getpwnam\_r}: this function is called to retrieve user information starting from his user-name;
+\item \texttt{\_nss\_shib\_getpwuid\_r}: this function is called to retrieve user information starting from his uid;
+\item \texttt{\_nss\_shib\_getpwent\_r}: this function is called to retrieve all the available users;
+\item \texttt{\_nss\_shib\_getgrnam\_r}: this function is called to retrieve a user group information starting from its name;
+\item \texttt{\_nss\_shib\_getgrgid\_r}: this function is called to retrieve a user group information starting from its id (gid);
+\item \texttt{\_nss\_shib\_getgrent\_r}: this function is called to retrieve all the available user groups.
+\end{itemize}
+
+This NSS module can be activated by modyfing the \texttt{/etc/nsswitch.conf} file as shown in algorithm \ref{alg:nssconf}.
+The NSS module reads some configuration form the configuration file \texttt{/etc/libnss.conf}.
+In particular, it is possible to specify the following parameters:
+\begin{itemize}
+\item url: specifies the URL of the servlet created on the IdP and able to list users and groups of users of a specific identity provider;
+\item sslcheck (optional): as for the PAM module, specifies whether the libcurl library has to verify the SSL certificate of the server when
+connecting via HTTPS;
+\item cafile (optional): as for the PAM module, specifies the name of a file, containing a CA public key, used by libcurl to verify the SSL
+certificate of the server when connecting via HTTPS;
+\item username (optional): if the servlet is behind an authentication method, specifies the username to be used for login;
+\item password (optional): if the servlet is behind an authentication method, specifies the password to be used for login;
+\item cookie\_num: specifies the number of cookies to be passed to the servlet; if no cookie has to be passed, 0 must be specified here;
+\item coolie\_\#\_name: specifies for each cookie the name of the cookie to be passed; values with \$\{name\} are considered variables to
+be searched in the environment;
+\item coolie\_\#\_value: specifies for each cookie the value of the cookie to be passed; values with \$\{name\} are considered variables to
+be searched in the environment.
+\end{itemize}
+
+\begin{algorithm}[t]
+\SetAlgoNoLine
+\texttt{passwd:     files shib}\\
+\texttt{shadow:     files}\\
+\texttt{group:      files shib}\\
+\texttt{}\\
+\texttt{hosts:      files dns}
+\caption{NSS configuration to use the \texttt{shib} module.}
+\label{alg:nssconf}
+\end{algorithm}
+
+With this two modules the linux machine recognizes Shibboleth users in the same way as local users.
+So a Shibboleth user can login to the linux machine with his credentials, can have access rights on files, use ACLs, and so on...
 
 \label{sec:jaas}
 \subsection{JAAS module}
