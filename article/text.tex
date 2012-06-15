@@ -120,13 +120,84 @@ This requeste gets the page with the key=value rows used to initialize the user 
 \end{enumerate}
 
 This mechanism simulates what usually happens in the browser of a user authentication to a Shibboleth web-application.
-All this interactions are, however, hidden to the user who is not aware of the underlying HTTP dialogue to permit the authentication.
+All this interactions are, however, automatic and do not require a user to manage or control the underlying HTTP dialogue to permit the
+authentication.\\
+\\
+In order for this mechanism to work, a web page has been created on a server and placed behind Shibboleth authentication.
+The user, after having provided valid login information, is shows this page that consists of a list rows with the format key=value.
+This list represents the user session and shows all the relevant metadata provided by Shibboleth with the user authentication.
+An example of the content of this page is as follows:
+\begin{algorithm}[t]
+\SetAlgoNoLine
+\texttt{authenticated=true}\\
+\texttt{Shib-Application-ID=default}\\
+\texttt{Shib-Session-ID=\_d28ec2af03fd7437ca500c351ab0aec0}\\
+\texttt{Shib-Identity-Provider=http://idp.server.hosntame/idp/shibboleth}\\
+\texttt{Shib-Authentication-Instant=2012-06-15T12:55:45.587Z}\\
+\texttt{Shib-Session-Index=0141d3c23dc19ee047f68e35037828a9db68d7961082566c9b399e512e03705f}\\
+\texttt{eduPersonEntitlement=urn:mace:mib.infn.it:permission:service1:access:user}\\
+\texttt{eduPersonPrincipalName=user@domain.it}\\
+\texttt{eduPersonScopedAffiliation=member@domain.it;student@domain.it}\\
+\texttt{eduPersonTargetedID=http://idp.server.hosntame/idp/shibboleth!https://sp.server...}\\
+\texttt{email=name.surname@domain.it}\\
+\texttt{givenName=Name}\\
+\texttt{sn=Surname}\\
+\texttt{uid=name}\\
+\texttt{Shib-Session-Unique=64656661756c7468747470733a2f2f636c6f75642d6d692d30332e6d696...}
+\caption{Example of PAM webpage on the S}
+\label{alg:examplepam}
+\end{algorithm}
 
 \label{sec:implementations}
 \section{Implementations}
+This article will present different implementations of this AAI solution.
+In order to test it in different scenarios and a wide spectrum of application, a set of different implementations have been realized
+covering the more widespread application platforms.\\
+\\
+In particular three main implementations have been realized: an integration of these authorization and authentication mechanisms inside
+Linux PAM and NSS modules; a integration with Java JAAS architecture; a module for python applications.
+In the following part of this section, these implementations will be described.
 
 \label{sec:pamnss}
 \subsection{PAM and NSS modules}
+Pluggable Authentication Modules (PAM) are at the core of user authentication in any modern linux distribution.
+PAM enables the user programs to transparently authenticate users, regardless of how security information is stored.
+As described in the Linux-PAM System Administrator's Guide (\cite{Morgan-1996}): ``It is the purpose of the Linux-PAM project to separate
+the development of privilege granting software from the development of secure and appropriate authentication schemes.
+This is accomplished by providing a library of functions that an application may use to request that a user be authenticated".\\
+\\
+For this reason, in order to guarantee a SSO mechanism on linux machines it seemed straightforward to implement a module for
+PAM able to authenticate and retrieve user sessions from Shibboleth via the HTTP Basic authentication mechanism.
+In order to authenticate using HTTP Basic, the general schema presented in secion \ref{sec:architecture} is implemented using the
+libcurl library (\cite{Stenberg-1996}).\\
+Libcurl is used to manage all the HTTP dialogues and is able to manage cookies and perform the HTTP basic authentication, when
+required by the IdP.
+\\
+A PAM module is a shared library with a public interface, specified by PAM headers, that links with the user programs to perform
+actions of authentication, accounting and to retrieve user session values.
+The methods that needs to be implemented are the following:
+\begin{itemize}
+\item \texttt{pam\_sm\_authenticate}: this function performs user authentication.
+This function has to request to the user his user ID and password.
+To perform these operation the PAM library uses an application-defined callback to allow a direct communication between a loaded module
+and the user via the application.\\
+This function, retrieved, the needed information, starts the login procedure with the SP and IdP and provides an answer wether the user
+has been able to provide a valid authentication or not.
+\item \texttt{pam\_sm\_setcred}: this function retrieves information to create a session for the user.
+Generally, an authentication module may have access to more information about a user than their authentication token.
+This function is used to make such information available to the application.
+\item \texttt{pam\_sm\_acct\_mgmt}: this function performs the task of establishing whether the user is permitted to gain access at this time.
+This function gets called when the user has already been validated by an authentication module.
+This function checks for the returned page body of the HTTP target resources behind Shibboleth authentication to verify that the
+\texttt{authenticate} variable is specified with value \texttt{true}.
+\item \texttt{pam\_sm\_open\_session}: this function is called to commence a session.
+\item \texttt{pam\_sm\_close\_session}: this function is called to terminate a session.
+\item \texttt{pam\_sm\_chauthtok}: this function is used to (re-)set the authentication token of the user.
+This function is not implemented in the module realized for Shibboleth.
+In fact the PAM module realized is not able to modify user information on the IdP side but it is used only to chech user session and
+perform AAI.\\
+\\
+\end{itemize}
 
 \label{sec:jaas}
 \subsection{JAAS module}
