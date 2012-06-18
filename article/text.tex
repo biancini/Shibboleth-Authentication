@@ -160,6 +160,11 @@ In the following part of this section, these implementations will be described.
 
 \label{sec:pamnss}
 \subsection{PAM and NSS modules}
+The standard mechanisms used by modern Linux systems to authenticate and list users are PAM and NSS.
+These two libraries have different purposes and implement different functionalities.
+
+\label{sec:pam}
+\subsubsection{Pluggable Authentication Modules (PAM)}
 Pluggable Authentication Modules (PAM) are at the core of user authentication in any modern linux distribution.
 PAM enables the user programs to transparently authenticate users, regardless of how security information is stored.
 As described in the Linux-PAM System Administrator's Guide (\cite{Morgan-1996}): ``It is the purpose of the Linux-PAM project to separate
@@ -226,6 +231,8 @@ when connecting via HTTPS.
 \label{alg:pamconf}
 \end{algorithm}
 
+\label{sec:nss}
+\subsubsection{Name Service Switch (NSS)}
 To permit a linux system to user external directories for users and user groups, it is necessary to implement another module for a different
 library: the Name Service Switch (NSS, \cite{GNU-1987}).
 This library permits to define services for accessing different databases containing various information.
@@ -276,10 +283,95 @@ be searched in the environment.
 \end{algorithm}
 
 With this two modules the linux machine recognizes Shibboleth users in the same way as local users.
-So a Shibboleth user can login to the linux machine with his credentials, can have access rights on files, use ACLs, and so on...
+So a Shibboleth user can login to the linux machine with his credentials, can have access rights on files, use ACLs, and so on...\\
+\\
+After the login the user finds in its login environment all the Shibboleth session values.
+All metadata downloaded from Shibbolet is in fact placed in the user session and can be used to perform SSO with other non web-based
+application.
 
 \label{sec:jaas}
 \subsection{JAAS module}
+Java, with its Enterprise Edition, has become a very well known and ubiquitous platform for developing software applications.
+Starting from Java 1.4 a common service has been introduced for AAI: the Java Authentication and Authorization Service (JAAS,
+\cite{Java-2002}).
+JAAS can be used for two purposes:
+\begin{itemize}
+\item for authentication of users, to reliably and securely determine who is currently executing Java code, regardless of
+whether the code is running as an application, an applet, a bean, or a servlet; and
+\item for authorization of users to ensure they have the access control rights (permissions) required to do the actions
+performed.
+\end{itemize}
+
+JAAS implements a Java version of the standard Pluggable Authentication Module (PAM) framework.
+For this reason, and for its widespread utilization in real applications, JAAS seemed a proper candidate to integrate a module
+to authenticate users on Shibboleth.
+Via this module it is now possible to integrate Shibboleth authentication, and metadata management, inside Java application
+not based on web-technologies.\\
+\\
+The general architecture of this JAAS module is the same of the PAM module described in this article in section \ref{sec:pam}.
+A JAAS module is implemented by a class extending the \texttt{javax.security.auth.spi.LoginModule} class and implementing
+the following methods:
+
+\begin{itemize}
+\item \texttt{initialize}: this method is used to initialize the login module specifying: the subject to be authenticated,
+a callback handler to deal the communications with the end user (in a very similar way to PAM conversation mechanisms);
+\item \texttt{login}: this method authenticates the user by checking his user name and password;
+\item \texttt{logout}: this method logs out the user;
+\item \texttt{abort}: this method is called if the login process terminates for some reason internal to JAAS configuration
+and cleans up any state that was originally saved;
+\item \texttt{commit}: this method is called if the login process concludes positively; it associates a set of principals
+to the login context; these principals can contain relevant information about the user session.\\
+Within the JAAS module for Shibboleth a specific principal has been developed (the \texttt{ShibbolethPrincipal}).
+This principal contains a \texttt{Map<String, String>} object that represents the user session containing all Shibboleth
+metadata information.
+\end{itemize}
+
+This JAAS module can be configured with a configuration file as the one presented in algorithm \ref{alg:jaasconf}.
+The login module accepts the same parameter of the PAM module described in section \ref{sec:pam} but,
+instead of having \texttt{cafile}, has a mechanism to authenticate server SSL certificates that leverages the standard
+trustsotres of Java defined by specifying the truststore file name and the password to access it.
+
+\begin{algorithm}[t]
+\SetAlgoNoLine
+\texttt{Shibboleth \{}\\
+\texttt{  it.infn.mib.shibboleth.jaas.JAASShibbolethLoginModule required}\\
+\texttt{  		url="https://servername.com/pam"}\\
+\texttt{  		sslcheck="false"}\\
+\texttt{  		sess\_username="username"}\\
+\texttt{  		truststore=""}\\
+\texttt{  		truststore\_password=""}\\
+\texttt{  		debug="false";}\\
+\texttt{\};}
+\caption{JAAS configuration file to use the \texttt{JAASShibbolethLoginModule} login module.}
+\label{alg:jaasconf}
+\end{algorithm}
+
+\label{sec:javaws}
+\subsubsection{Example of login and credential usage in a Java application}
+In order to integrate such authentication mechanism into a real Java application, very few lines of code have to be
+written.
+The algorithm \ref{alg:javalogin} shows how it is possible to use the \texttt{Shibboleth} login context defined in the
+JAAS config file to authenticate the user and then how it is possible to cycle through all the principals returned
+by the login process to retrieve the user session.
+
+\begin{algorithm}[t]
+\SetAlgoNoLine
+\texttt{LoginContext lc =  new LoginContext("Shibboleth", new MyCallbackHandler());}\\
+\texttt{lc.login();}\\
+\texttt{System.out.println("User logged in successfully.");}\\
+\texttt{}\\
+\texttt{Map<String, String> session = null; // will contain the Shibboleth user session}\\
+\texttt{for (Principal curPrincipal : lc.getSubject().getPrincipals()) \{}\\
+\texttt{	if (curPrincipal instanceof ShibbolethPrincipal) \{}\\
+\texttt{		loggedUser = ((ShibbolethPrincipal) curPrincipal).getName();}\\
+\texttt{		session = ((ShibbolethPrincipal) curPrincipal).getSession();}\\
+\texttt{	\}}\\
+\texttt{\}}
+\caption{Example of a Java login with \texttt{JAASShibbolethLoginModule}.}
+\label{alg:javalogin}
+\end{algorithm}
+
+After the login it is possible to use the 
 
 \label{sec:python}
 \subsection{Python}
