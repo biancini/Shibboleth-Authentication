@@ -20,7 +20,7 @@ public class S3DebugServlet extends HttpServlet {
 
 		String stringToSign = S3AccessorMethods.createStringToSign(httpRequest);
 		out.println("\n\n" + stringToSign);
-		// StringToSign creation ends
+		
 		String secretKey = S3AccessorMethods.getSecretKey(S3AccessorMethods.getAccessKey(httpRequest));
 		String mySign = S3AccessorMethods.encryptSignature(stringToSign, secretKey);
 		out.println(mySign);

@@ -13,8 +13,6 @@ import sun.misc.BASE64Decoder;
 import sun.misc.BASE64Encoder;
 
 public class S3AccessorMethods {
-	//private final Logger log = LoggerFactory.getLogger(S3AccessorMethods.class);
-	
 	public static String getAccessKey(HttpServletRequest httpRequest) {
 		String httpAuthorization = httpRequest.getHeader("Authorization");
 		if (httpAuthorization == null) return null;
@@ -72,7 +70,7 @@ public class S3AccessorMethods {
 		while (headerNames.hasMoreElements()) {
 			String headerName = (String) headerNames.nextElement().toLowerCase();
 			String currentHeader = httpRequest.getHeader(headerName);
-			//log.debug(headerName + ":" + currentHeader);
+
 			if (headerName.startsWith("x-amz")) {
 				canonicalizedAmzHeadersVec.add(headerName + ":" + currentHeader.toLowerCase().replace(" ", ""));
 			}
@@ -89,7 +87,6 @@ public class S3AccessorMethods {
 		canonicalizedResources = "";
 		
 		if(currentQueryString != null){
-			//log.debug("QueryString: " + currentQueryString);
 			String[] splittedQueryString = currentQueryString.split("&");
 			for (int i = 0; i < splittedQueryString.length; i++) {
 				for (int j = 0; j < subResources.length; j++) {
@@ -123,11 +120,9 @@ public class S3AccessorMethods {
 	}
 	
 	public static String encryptSignature(String stringToSign, String key) {
-		
-		String signature = null;
-		
 		try {
-
+			String signature = null;
+			
 			// UTF-8 encoding of stringToSign
 			String stringToSignUTF8 = new String(stringToSign.getBytes(), "UTF-8");
 			
@@ -145,10 +140,10 @@ public class S3AccessorMethods {
 			BASE64Encoder b64Encoder = new BASE64Encoder();
 			signature = b64Encoder.encode(rawHmac);
 			
+			return signature;
 		} catch (Exception e) {
-			//log.debug("Failed to generate HMAC : " + e.getMessage());
+			return null; // Failed to generate HMAC
 		}
-		return signature;
 	}
 	
 }

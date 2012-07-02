@@ -1,19 +1,21 @@
 \label{sec:introduction}
 \section{Introduction}
 User authentication and user authorization are main tasks needed to guarantee security in IT environments.
-One important requirement of such security solutions, is that they must be as transparent as possibile.
-Current user applications, usually sit on different systems and environment.
-This requires a solution able to permit that each system is not required to create and manage its own credential system.
-For this reason single sign-on (SSO, as described in \cite{Shaer-1995}) systems have been designed and implemented.
-These systems have also a strong impact on users who don't need to perform multiple logins on different systems, but could be automatically
-identified by all the application they are using.\\
+One important requirement for security solutions, is that they must be as transparent as possibile.
+Solutions which are complex or intrusive, in fact, tend to be circumvent by users or prevent their productivity.
+This transparency is made difficult by the current application scenarios.
+Current user applications, usually sit on different systems and environment and security solutions must provide ways
+to eliminate the case in which every system has to manage its own credential system.
+For this reason single sign-on (SSO, as described in \cite{Shaer-1995}) mechanisms have been used.
+The SSO systems not only have a strong impact on users who need to perform multiple logins on different systems, they also permit to be
+automatically identified by all the applications used by one single user.\\
 \\
 One of the most widespread SSO software package is Shibboleth \cite{Morgan-2004}, which implements authentication and authorization over
 network resources with a federated approach.
 Shibboleth, designed and implemented by Internet2, provides an effective solution for secure multi-organizational access to web resources.
-It implements widely used federated identity standards, principally OASIS' Security Assertion Markup Language (SAML \cite{Cantor-2005}), to
+It implements widely used standards, principally OASIS' Security Assertion Markup Language (SAML \cite{Cantor-2005}), to
 provide a federated single sign-on and attribute exchange framework.
-Shibboleth also provides extended privacy functionality allowing the browser user and their home site to control the attributes released to
+Shibboleth also provides extended privacy functionality allowing the user and the home site to control the attributes released to
 each application.\\
 \\
 Using Shibboleth-enabled access simplifies the management of identity and permissions for organizations supporting either users or
@@ -27,15 +29,15 @@ the users and supply user authorization attributes; Service Providers (SPs) whic
 contents.\\
 The communication excanges between the user, the IdP and the SP are all base don SAML assertions and transit over HTTP channels.
 This implementation architecture permits Shibboleth to works seamlessly inside user web-browsers.
-However, this approach is strongly web-centric, and for this reason does not adapt well to provide SSO authentication to non web-based
-application.\\
+However, this approach is strongly web-centric, and for this reason does not adapt well to provide SSO authentication to applications
+run outside web-browsers.\\
 \\
 In this article a solution is presented to permit Shibboleth authentication for non web-based applications.
-The traditional login scheme used by Shibboleth to authenticate users is implemented inside a web-borser.
+Traditionally Shibboleth authenticates users by using a login scheme working inside web-browsers.
 The user, when trying to log to a web resources, is redirected to the IdP to perform authentication and obtain authorization assertions via
 his session metadata.
 The use case implemented within this article solves the problem of authenticatin a user and retrieving his metadata information from Shibboleth
-without using a web-broser.
+without the need to use a web-browser.
 This solution could be integrated in traditional client-based application (for instance application written in Java or Python) to obtain
 a secure way to manager user logins.\\
 \\
@@ -70,7 +72,7 @@ This infrastructure supports the execution of scientific computation and the sto
 The grid, since its inception, has introduced specific solutions (inspired to the original article \cite{Foster-1998}) to security problems.
 The new Shibboleth SSO for web-application somehow lies next to the Grid AAI, thus the idea to integrate the two security systems is natural
 and potentially very beneficial.\\
-Due to the complexity of the Moonlite project, which would add to the intrinsic complexity of grid security schemas, different solutions have
+Due to the complexity of the Moonshot project, which would add to the intrinsic complexity of grid security schemas, different solutions have
 been adopted in this field.
 \\
 In grid environments, this problem has been approached with the goal to try and integrate the existing grid security infrastructures with
@@ -371,10 +373,73 @@ by the login process to retrieve the user session.
 \label{alg:javalogin}
 \end{algorithm}
 
-After the login it is possible to use the 
+After the login, it is possible to use the credentials obtained to connect to other services over the network.
+For instance, it could be possible to call a webservice behind the same SP connecting to the Shibboleth session
+created during login.\\
+In order to connect to an exsisting session, it is sufficient to pass to the web-service a cookie as follows:
+\begin{itemize}
+\item name: the name of the cookies is ``\texttt{\_shibsession\_}" followed by a unique string identifying the session.
+This string can be obtained from the user session via the variable called \texttt{Shib-Session-Unique}.
+\item value: the value of this cookie is the shibboleth session id for the user's session.
+This value can be obtained from the user session via the variable called \texttt{Shib-Session-ID}.
+\end{itemize}
+The two varbiales used to create the cookie entry to be passed to HTTP webservice call, can be retrieved from the
+JAAS Shibboleth principal or from the user shell environment, if the user logged the linux machine using
+the PAM and NSS modules described within this article.
 
 \label{sec:python}
 \subsection{Python}
+As another example, after the JAAS java implementation, another implementation for this AAI mechanism has been realized
+in Python.
+Python is an high-level programming language widely used to rapidly implement applications.
+It is very widespread in the research fields where most of the prototyping is performed in Python and thus even a lot
+of production applications are very often implemented in this language.\\
+\\
+Differently from Java, Python does not offer a common set of APIs to manage authentication and authorization schemes.
+For this reason the implemented module for Shibboleth has been written without the need to compliance with any
+pre-existent security framework.\\
+\\
+The implemented module is contained in the \texttt{shibauth} package that exposes a \texttt{login} method returning
+the name of the logged-in user and a dictionary with the user session.\\
+The implementation of an application that leverages this authentication mechanism is thus very simple, as shown
+in \ref{alg:python}.
+
+\begin{algorithm}[t]
+\SetAlgoNoLine
+\texttt{import shibauth}\\
+\texttt{import getpass}\\
+\texttt{}\\
+\texttt{username = raw\_input('Enter your username: ')}\\
+\texttt{password = getpass.getpass('Enter your password: ')}\\
+\texttt{}\\
+\texttt{loggeduser, session =  shibauth.login(username, password)}\\
+\texttt{print "Printing session for logged in user:"}\\
+\texttt{for key,val in session.items():}\\
+\texttt{    print "Session value: [\%s] => \%s" \% (key, val)}
+\caption{Example of a Python login with the \texttt{shibauth} module.}
+\label{alg:python}
+\end{algorithm}
+
+The Python \texttt{shibauth} module is configurable via a configuration file containing the usual information to
+permit Shibboleth login.
+An example of the configuration file can be found in algorithm \ref{alg:pythonconf}.
+
+\begin{algorithm}[t]
+\SetAlgoNoLine
+\texttt{[HTTP params]}\\
+\texttt{url=https://servername.com/pam}\\
+\texttt{sslcheck=false}\\
+\texttt{sess\_username=username}\\
+\texttt{debug=false}
+\caption{Pthong configuration file to use the \texttt{pythonconf} login module.}
+\label{alg:pythonconf}
+\end{algorithm}
+
+\label{sec:javaws}
+\subsubsection{Example of login and credential usage in a Python application}
+After the login, as described for Java applications, it is possible to integrate other services from the same SP.
+Again, to call a Shibboleth authenticated webservice the client has to pass a ``\texttt{\_shibsession\_}" cookie
+with the unique keyname and id for the Shibboleth session.
 
 \label{sec:conclusion}
 \section{Conclusion and future works}
