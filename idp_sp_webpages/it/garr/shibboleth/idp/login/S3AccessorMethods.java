@@ -44,6 +44,10 @@ public class S3AccessorMethods {
 	public static String getSecretKey(String accessKey) {
 		return "PmcaneNFmZDmTAFKRRMkKCfSibBVKMcZJOKGCXMpHQ";
 	}
+	
+	public static String getUsername(String accessKey) {
+		return accessKey;
+	}
 
 	@SuppressWarnings("unchecked")
 	public static String createStringToSign(HttpServletRequest httpRequest) {

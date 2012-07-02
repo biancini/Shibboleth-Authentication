@@ -1,2 +1,2 @@
 http\://garr.it/shibboleth/authn = schema/amazons3-profile-handler.xsd
-urn:garr:names:tc:SAML:2.0:ac:classes:AmazonS3 = schema/garr-saml-schema-authn-context-s3-1.0.xsd
+urn:garr:names:tc:SAML:2.0:ac:classes:AmazonS3 = schema/amazons3-authn-context.xsd

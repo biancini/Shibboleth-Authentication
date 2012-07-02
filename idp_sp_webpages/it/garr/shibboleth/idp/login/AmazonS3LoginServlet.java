@@ -2,7 +2,6 @@ package it.garr.shibboleth.idp.login;
 
 import java.io.IOException;
 
-import javax.security.auth.Subject;
 import javax.security.auth.login.LoginException;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -17,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import edu.internet2.middleware.shibboleth.idp.authn.AuthenticationEngine;
 import edu.internet2.middleware.shibboleth.idp.authn.AuthenticationException;
 import edu.internet2.middleware.shibboleth.idp.authn.LoginHandler;
+import edu.internet2.middleware.shibboleth.idp.authn.UsernamePrincipal;
 
 public class AmazonS3LoginServlet extends HttpServlet {
 
@@ -45,7 +45,6 @@ public class AmazonS3LoginServlet extends HttpServlet {
 		
 		try {
 			if (authenticateUser(request)){
-				request.setAttribute(failureParam, "false");
 				AuthenticationEngine.returnToAuthenticationEngine(request, response);
 			} else{
 				response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -76,8 +75,10 @@ public class AmazonS3LoginServlet extends HttpServlet {
 			
 			String stringToSign = S3AccessorMethods.getStringToSign(request);
 			//String stringToSign = S3AccessorMethods.createStringToSign(request);
-			String calculatedSecret = S3AccessorMethods.encryptSignature(stringToSign, accessKey);
-			String incomingSecret = S3AccessorMethods.getSecretKey(accessKey);
+			String secretKey = S3AccessorMethods.getSecretKey(accessKey);
+			String calculatedSecret = S3AccessorMethods.encryptSignature(stringToSign, secretKey);
+			String incomingSecret = S3AccessorMethods.getIncomingAuthorization(request, accessKey);
+			String username = S3AccessorMethods.getUsername(accessKey);
 			
 			log.debug("Rolled out Amazon authentication params:\n" +
 					  "accessKey = " + accessKey + "\n" +
@@ -88,9 +89,9 @@ public class AmazonS3LoginServlet extends HttpServlet {
 			
 			if (!calculatedSecret.equals(incomingSecret)) throw new LoginException("Denying authorization to user.");
 			log.debug("Successfully authenticated user {}", accessKey);
-
-			Subject userSubject = new Subject(false, null, null, null);
-			request.setAttribute(LoginHandler.SUBJECT_KEY, userSubject);
+			
+			request.setAttribute(LoginHandler.PRINCIPAL_NAME_KEY, username);
+			request.setAttribute(LoginHandler.PRINCIPAL_KEY, new UsernamePrincipal(username));
 			request.setAttribute(LoginHandler.AUTHENTICATION_METHOD_KEY, authenticationMethod);
 			return true;
 		} catch (LoginException e) {
