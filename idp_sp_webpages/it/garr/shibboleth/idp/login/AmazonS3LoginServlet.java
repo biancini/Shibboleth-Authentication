@@ -1,5 +1,7 @@
 package it.garr.shibboleth.idp.login;
 
+import it.infn.mib.shibboleth.idp.LdapConfigServlet;
+
 import java.io.IOException;
 
 import javax.security.auth.login.LoginException;
@@ -28,21 +30,12 @@ public class AmazonS3LoginServlet extends HttpServlet {
 	private String authenticationMethod;
 	private final String failureParam = "loginFailed";
 	
-	private static String ldapUrl = null;
-	private static String baseDN = null;
-	private static String bindDN = null;
-	private static String credential = null;
 	private static String salt = null;
 	
 	/** {@inheritDoc} */
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
 		
-		// Retrieving LDAP parameters
-		ldapUrl = getServletConfig().getInitParameter("ldapUrl");
-		baseDN = getServletConfig().getInitParameter("baseDN");
-		bindDN = getServletConfig().getInitParameter("bindDN");
-		credential = getServletConfig().getInitParameter("credential");
 		//salt = getServletConfig().getInitParameter("salt");
 		salt = "770A8A65DA156D24EE2A093277530142";
 		
@@ -92,8 +85,8 @@ public class AmazonS3LoginServlet extends HttpServlet {
 		try {
 			log.debug("Attempting to authenticate user {}", accessKey);
 			
-			log.debug("Trying to connect to ldap: " + ldapUrl + " with baseDN: " + baseDN);
-			S3AccessorMethods.connectLdap(ldapUrl, baseDN, bindDN, credential, accessKey);
+			log.debug("Trying to connect to ldap: " + LdapConfigServlet.getLdapUrl() + " with baseDN: " + LdapConfigServlet.getBaseDN());
+			S3AccessorMethods.connectLdap(LdapConfigServlet.getLdapUrl(), LdapConfigServlet.getBaseDN(), LdapConfigServlet.getBindDN(), LdapConfigServlet.getCredential(), accessKey);
 			
 			if (S3AccessorMethods.getUsername(accessKey) != null){
 				log.debug("Utente " + accessKey + " trovato nel db ldap" + "\nDati utente: \n" + S3AccessorMethods.printUserParameters());

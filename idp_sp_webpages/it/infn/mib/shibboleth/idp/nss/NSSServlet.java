@@ -1,5 +1,7 @@
 package it.infn.mib.shibboleth.idp.nss;
 
+import it.infn.mib.shibboleth.idp.LdapConfigServlet;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Iterator;
@@ -17,21 +19,18 @@ import edu.vt.middleware.ldap.SearchFilter;
 
 public class NSSServlet extends HttpServlet {
 	private static final long serialVersionUID = 1075071397951598150L;
-	private static String ldapUrl = null;
-	private static String baseDN = null;
 	
-	public void init() throws ServletException {
-		ldapUrl = getServletConfig().getInitParameter("ldapUrl");
-		baseDN = getServletConfig().getInitParameter("baseDN");
-	}
-
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		PrintWriter out = response.getWriter();
 		String queryString = request.getQueryString();
 		
 		try {
 			// Connection with LDAP and query for users
-			Ldap ldap = new Ldap(new LdapConfig(ldapUrl, baseDN));
+			LdapConfig ldapConfig = new LdapConfig(LdapConfigServlet.getLdapUrl(), LdapConfigServlet.getBaseDN());
+			ldapConfig.setBindDn(LdapConfigServlet.getBindDN());
+			ldapConfig.setBindCredential(LdapConfigServlet.getCredential());
+			Ldap ldap = new Ldap(ldapConfig);
+			
 			Iterator<SearchResult> results = ldap.search(new SearchFilter("(&(objectClass=inetOrgPerson)(uid=*))"), new String[]{"uid", "uidnumber", "gidnumber", "displayname", "homedirectory", "loginshell"});
 			
 			// Production of output file
