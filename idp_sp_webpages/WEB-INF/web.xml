@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://java.sun.com/xml/ns/j2ee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd" version="2.4">
+  <display-name>Shibboleth Identity Provider</display-name>
+  
+    <!-- Servlet with LDAP configurations -->
+    <servlet>
+        <servlet-name>LdapConfig</servlet-name>
+        <servlet-class>it.infn.mib.shibboleth.idp.LdapConfigServlet</servlet-class>
+        <load-on-startup>3</load-on-startup>
+        <init-param>
+             <param-name>ldapUrl</param-name>
+             <param-value>ldap://127.0.0.1:389</param-value>
+        </init-param>
+        <init-param>
+             <param-name>baseDN</param-name>
+             <param-value>ou=people,dc=example,dc=com</param-value>
+        </init-param>
+        <init-param>
+             <param-name>bindDN</param-name>
+             <param-value>cn=admin,dc=example,dc=com</param-value>
+        </init-param>
+        <init-param>
+             <param-name>credential</param-name>
+             <param-value>ciaoidem</param-value>
+        </init-param>
+    </servlet>
+
+    <!-- Servlet for doing S3 authentication -->
+    <servlet>
+        <servlet-name>AmazonS3AuthHandler</servlet-name>
+        <servlet-class>it.garr.shibboleth.idp.login.AmazonS3LoginServlet</servlet-class>
+        <load-on-startup>3</load-on-startup>
+        <init-param>
+             <param-name>salt</param-name>
+             <param-value>q9Kk/8_#0mQv:\bsui(V:\fL;eP9Cq</param-value>
+        </init-param>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>AmazonS3AuthHandler</servlet-name>
+        <url-pattern>/Authn/AmazonS3</url-pattern>
+    </servlet-mapping>
+
+    <!-- Servlet added for PAM/NSS authentication -->
+    <servlet>
+        <servlet-name>nss_jsp</servlet-name>
+        <servlet-class>it.infn.mib.shibboleth.idp.nss.NSSServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>nss_jsp</servlet-name>
+        <url-pattern>/nss</url-pattern>
+    </servlet-mapping>
+  
+</web-app>
