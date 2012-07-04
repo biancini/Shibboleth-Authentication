@@ -27,11 +27,25 @@ public class AmazonS3LoginServlet extends HttpServlet {
 
 	private String authenticationMethod;
 	private final String failureParam = "loginFailed";
-
+	
+	private static String ldapUrl = null;
+	private static String baseDN = null;
+	private static String bindDN = null;
+	private static String credential = null;
+	private static String salt = null;
+	
 	/** {@inheritDoc} */
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
-
+		
+		// Retrieving LDAP parameters
+		ldapUrl = getServletConfig().getInitParameter("ldapUrl");
+		baseDN = getServletConfig().getInitParameter("baseDN");
+		bindDN = getServletConfig().getInitParameter("bindDN");
+		credential = getServletConfig().getInitParameter("credential");
+		//salt = getServletConfig().getInitParameter("salt");
+		salt = "770A8A65DA156D24EE2A093277530142";
+		
 		String method = DatatypeHelper.safeTrimOrNullString(config.getInitParameter(LoginHandler.AUTHENTICATION_METHOD_KEY));
 		authenticationMethod = (method != null) ? method : S3_AUTHN_CTX;
 		log.debug("");
@@ -40,7 +54,7 @@ public class AmazonS3LoginServlet extends HttpServlet {
 	/** {@inheritDoc} */
 	protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		log.debug("Auhtenticating user with the following Amazon authentication strings:\n" +
-				  "authorization = " + request.getHeader("authorization") + "\n" +
+				  "Authorization = " + request.getHeader("Authorization") + "\n" +
 				  "stringToSign = " + request.getHeader("stringToSign"));
 		
 		try {
@@ -67,15 +81,28 @@ public class AmazonS3LoginServlet extends HttpServlet {
 	 * @throws LoginException thrown if there is a problem authenticating the user
 	 */
 	protected boolean authenticateUser(HttpServletRequest request) throws LoginException {
-		String accessKey = S3AccessorMethods.getAccessKey(request);
-		if (accessKey == null) return false;
+		String accessKey=null;
+		try {
+			accessKey = S3AccessorMethods.getAccessKey(request);
+		} catch (Exception e) {
+			log.error("Error while retriving the accessKey: " + e);
+			return false;
+		} 
 		
 		try {
 			log.debug("Attempting to authenticate user {}", accessKey);
 			
+			log.debug("Trying to connect to ldap: " + ldapUrl + " with baseDN: " + baseDN);
+			S3AccessorMethods.connectLdap(ldapUrl, baseDN, bindDN, credential, accessKey);
+			
+			if (S3AccessorMethods.getUsername(accessKey) != null){
+				log.debug("Utente " + accessKey + " trovato nel db ldap" + "\nDati utente: \n" + S3AccessorMethods.printUserParameters());
+			} else {
+				log.debug("Utente " + accessKey + " non trovato in ldap");
+			}
+			
 			String stringToSign = S3AccessorMethods.getStringToSign(request);
-			//String stringToSign = S3AccessorMethods.createStringToSign(request);
-			String secretKey = S3AccessorMethods.getSecretKey(accessKey);
+			String secretKey = S3AccessorMethods.getSecretKey(salt);
 			String calculatedSecret = S3AccessorMethods.encryptSignature(stringToSign, secretKey);
 			String incomingSecret = S3AccessorMethods.getIncomingAuthorization(request, accessKey);
 			String username = S3AccessorMethods.getUsername(accessKey);
@@ -83,7 +110,8 @@ public class AmazonS3LoginServlet extends HttpServlet {
 			log.debug("Rolled out Amazon authentication params:\n" +
 					  "accessKey = " + accessKey + "\n" +
 					  "stringToSign = " + stringToSign + "\n" +
-					  "calculatedSecret = " + calculatedSecret);
+					  "calculatedSecret = " + calculatedSecret + "\n" + 
+					  "incomingSecret = " + incomingSecret);
 			
 			if (stringToSign == null || calculatedSecret == null) return false;
 			
@@ -95,11 +123,12 @@ public class AmazonS3LoginServlet extends HttpServlet {
 			request.setAttribute(LoginHandler.AUTHENTICATION_METHOD_KEY, authenticationMethod);
 			return true;
 		} catch (LoginException e) {
-			log.debug("User authentication for " + accessKey + " failed", e);
+			log.error("User authentication for " + accessKey + " failed");
 			throw e;
 		} catch (Throwable e) {
-			log.debug("User authentication for " + accessKey + " failed", e);
+			log.error("User authentication for " + accessKey + " failed");
 			throw new LoginException("unknown authentication error");
 		}
 	}
+
 }
