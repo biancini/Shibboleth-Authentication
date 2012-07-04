@@ -47,7 +47,7 @@ class http_methods():
                 print >> sys.stderr, 'secreted_string = ' + secreted_string
 
             headers = {}
-            headers['authorization'] = "AWS %s:%s" % (access_key, secreted_string)
+            headers['Authorization'] = "AWS %s:%s" % (access_key, secreted_string)
             headers['stringToSign'] = base64.b64encode(string_to_sing)
             req = urllib2.Request(url_to_read, headers=headers)
         else:
