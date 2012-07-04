@@ -66,20 +66,19 @@ public class AmazonS3LoginServlet extends HttpServlet {
 	}
 
 	/**
-	 * Authenticate a username and password against JAAS. If authentication succeeds the name of the first principal, or
-	 * the username if that is empty, and the subject are placed into the request in their respective attributes.
+	 * Authenticate a access and secret against the LDAP server used by Shibboleth. If authentication succeeds 
+	 * the username is placed into the request in its respective attribute.
 	 *
 	 * @param request current authentication request
-	 *
 	 * @throws LoginException thrown if there is a problem authenticating the user
 	 */
 	protected boolean authenticateUser(HttpServletRequest request) throws LoginException {
-		String accessKey=null;
+		String accessKey = null;
 		try {
 			accessKey = S3AccessorMethods.getAccessKey(request);
 		} catch (Exception e) {
 			log.error("Error while retriving the accessKey: " + e);
-			return false;
+			throw new LoginException("Error while retriving the accessKey.");
 		} 
 		
 		try {
@@ -120,7 +119,7 @@ public class AmazonS3LoginServlet extends HttpServlet {
 			throw e;
 		} catch (Throwable e) {
 			log.error("User authentication for " + accessKey + " failed");
-			throw new LoginException("unknown authentication error");
+			throw new LoginException("Unknown authentication error.");
 		}
 	}
 

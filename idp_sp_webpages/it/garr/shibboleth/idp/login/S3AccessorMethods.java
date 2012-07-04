@@ -27,7 +27,7 @@ import edu.vt.middleware.ldap.SearchFilter;
 
 public class S3AccessorMethods {
 	private static HashMap<String, String> userParameters = null;
-//	private static final Logger log = LoggerFactory.getLogger(S3AccessorMethods.class);
+	//private static final Logger log = LoggerFactory.getLogger(S3AccessorMethods.class);
 	
 	public static String getAccessKey(HttpServletRequest httpRequest) throws Exception {
 		String httpAuthorization = httpRequest.getHeader("Authorization");

@@ -10,17 +10,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.internet2.middleware.shibboleth.idp.authn.provider.AbstractLoginHandler;
-import edu.internet2.middleware.shibboleth.idp.authn.provider.UsernamePasswordCredential;
 
 /**
- * Authenticate a username and password against a JAAS source.
+ * Authenticate a secret and access key (Amazon S3 standard) againsta the LDAP used by Shibboleth.
  * 
- * This login handler creates a {@link javax.security.auth.Subject} and binds it to the request as described in the
- * {@link edu.internet2.middleware.shibboleth.idp.authn.LoginHandler} documentation. If the JAAS module does not create
- * a principal for the user a {@link edu.internet2.middleware.shibboleth.idp.authn.UsernamePrincipal} is created, using
- * the entered username. If the <code>storeCredentialsInSubject</code> init parameter of the authentication servlet is
- * set to true a {@link UsernamePasswordCredential} is created, based on the entered username and password, and stored
- * in the Subject's private credentials.
+ * This login handler creates a {@link edu.internet2.middleware.shibboleth.idp.authn.UsernamePrincipal} using
+ * the entered username.
  */
 public class AmazonS3LoginHandler extends AbstractLoginHandler {
 
@@ -28,7 +23,7 @@ public class AmazonS3LoginHandler extends AbstractLoginHandler {
     private final Logger log = LoggerFactory.getLogger(AmazonS3LoginHandler.class);
 
     /** The context-relative path of the servlet used to perform authentication. */
-    private String authenticationServletURL;
+    private String authenticationServletURL = null;
 
     /**
      * Constructor.

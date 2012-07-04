@@ -49,9 +49,7 @@ public class AmazonS3FactoryBean extends AbstractLoginHandlerFactoryBean {
 
     /** {@inheritDoc} */
     protected Object createInstance() throws Exception {
-        AmazonS3LoginHandler handler = new AmazonS3LoginHandler(
-                authenticationServletURL);
-
+        AmazonS3LoginHandler handler = new AmazonS3LoginHandler(authenticationServletURL);
         populateHandler(handler);
 
         return handler;

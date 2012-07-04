@@ -28,14 +28,11 @@ import org.w3c.dom.Element;
 import edu.internet2.middleware.shibboleth.idp.config.profile.authn.AbstractLoginHandlerBeanDefinitionParser;
 
 /**
- * Spring bean definition parser for username/password authentication handlers.
+ * Spring bean definition parser for Amazon S3 authentication handlers.
  */
 public class AmazonS3BeanDefinitionParser extends AbstractLoginHandlerBeanDefinitionParser {
 
-    /** Schema type. */
     public static final QName SCHEMA_TYPE = new QName(AmazonS3NamespaceHandler.NAMESPACE, "AmazonS3");
-
-    /** Class logger. */
     private final Logger log = LoggerFactory.getLogger(AmazonS3BeanDefinitionParser.class);
 
     /** {@inheritDoc} */
