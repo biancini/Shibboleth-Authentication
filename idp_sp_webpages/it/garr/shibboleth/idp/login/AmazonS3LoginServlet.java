@@ -85,7 +85,7 @@ public class AmazonS3LoginServlet extends HttpServlet {
 			log.debug("Attempting to authenticate user {}", accessKey);
 			
 			log.debug("Trying to connect to ldap: " + LdapConfigServlet.getLdapUrl() + " with baseDN: " + LdapConfigServlet.getBaseDN());
-			S3AccessorMethods.connectLdap(LdapConfigServlet.getLdapUrl(), LdapConfigServlet.getBaseDN(), LdapConfigServlet.getBindDN(), LdapConfigServlet.getCredential(), accessKey);
+			S3AccessorMethods.connectLdap(LdapConfigServlet.getLdapUrl(), LdapConfigServlet.getBaseDN(), LdapConfigServlet.getBindDN(), LdapConfigServlet.getCredential(), S3AccessorMethods.getUId(accessKey));
 			
 			if (S3AccessorMethods.getUsername(accessKey) != null){
 				log.debug("Utente " + accessKey + " trovato nel db ldap" + "\nDati utente: \n" + S3AccessorMethods.printUserParameters());

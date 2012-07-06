@@ -38,6 +38,16 @@ public class S3AccessorMethods {
 		return decode64(httpAuthorization.split(":")[0]);
 	}
 	
+	public static String getMail() throws Exception{
+		String email = null;
+		if(userParameters == null || !userParameters.containsKey("mail") || userParameters.get("mail")==null){
+			throw new Exception("Email parameter has not been retreived from LDAP.");
+		}
+		email = userParameters.get("mail");
+		
+		return email;
+	}
+	
 	public static String getStringToSign(HttpServletRequest httpRequest) throws IOException {
 		String stringToSign = httpRequest.getHeader("stringToSign");
 		if (stringToSign == null) return null;
@@ -141,8 +151,8 @@ public class S3AccessorMethods {
 		return signature;
 	}
 	
-	public static void connectLdap(String ldapUrl, String baseDN, String bindDN, String credential, String accessKey) throws IOException, NamingException {
-		String[] ldapParameters = new String[]{"uid", "eduPersonPrincipalName", "userPassword"};
+	public static void connectLdap(String ldapUrl, String baseDN, String bindDN, String credential, String user) throws IOException, NamingException {
+		String[] ldapParameters = new String[]{"uid", "eduPersonPrincipalName", "userPassword", "mail"};
 		
 		// Connection with LDAP and query for users
 		LdapConfig ldapConfig = new LdapConfig(ldapUrl, baseDN);
@@ -151,7 +161,7 @@ public class S3AccessorMethods {
 		Ldap ldap = new Ldap(ldapConfig);
 		
 		// Uid extracted from decoded accessKey
-		String uid = getUId(accessKey);
+		String uid = user;
 		Iterator<SearchResult> results = ldap.search(new SearchFilter("uid="+uid), ldapParameters);
 		if (!results.hasNext()) throw new IOException("No users returned from LDAP.");
 		
@@ -172,7 +182,7 @@ public class S3AccessorMethods {
 	}
 	
 	public static String printUserParameters() throws IOException, NamingException {
-		String[] ldapParameters = new String[]{"uid", "eduPersonPrincipalName"};
+		String[] ldapParameters = new String[]{"uid", "eduPersonPrincipalName", "mail"};
 		String stringUserParameters = "";
 		
 		for (String curParameter : ldapParameters)
@@ -191,7 +201,7 @@ public class S3AccessorMethods {
 		
 	}
 	
-	private static String getUId(String accessKey) throws IOException {
+	public static String getUId(String accessKey) throws IOException {
 		return accessKey.split("!")[1];
 	}
 	
@@ -202,7 +212,7 @@ public class S3AccessorMethods {
 		return signature;
 	}
 	
-	private static String decode64(String encodedString) throws IOException{
+	public static String decode64(String encodedString) throws IOException{
 		BASE64Decoder decode = new BASE64Decoder();
 		byte[] decodedString = decode.decodeBuffer(encodedString);
 		

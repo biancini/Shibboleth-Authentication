@@ -9,6 +9,7 @@ Inside this project the following modules are created:
   * a PAM module to authenticate over HTTP Basich Auhentication
   * a JAAS module to authenticate inside Java applications
   * a Python module to authenticate on python applications
+  * an extension to IdP to implement a new LoginHandler managing S3 authentication
   
 Copyright, 2012-2012, Andrea Biancini
 
@@ -64,4 +65,16 @@ To obtain more information on urllib2, visit:
 
   [http://docs.python.org/library/urllib2.html]
   
-  
+ 
+S3 login handler
+----------------
+
+The S3 LoginHandler permits an authentication via the standard Amazon S3 authorization mechanisms.
+This mechanims uses a couple of keys called access key and secret key, as described in this
+page:
+
+  [http://docs.amazonwebservices.com/AmazonS3/latest/dev/RESTAuthentication.html#RESTAuthenticationQueryStringAuth]
+
+The LoginHandler has been implemented following the Internet2 specification described at this page:
+
+  [https://wiki.shibboleth.net/confluence/display/SHIB2/IdPDevExtLoginHandler]

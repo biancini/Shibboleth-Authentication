@@ -23,12 +23,20 @@ public class LdapConfigServlet extends HttpServlet {
 	private static String baseDN = null;
 	private static String bindDN = null;
 	private static String credential = null;
+	private static String salt = null;
 	
 	public void init() throws ServletException {
 		ldapUrl = getServletConfig().getInitParameter("ldapUrl");
 		baseDN = getServletConfig().getInitParameter("baseDN");
 		bindDN = getServletConfig().getInitParameter("bindDN");
 		credential = getServletConfig().getInitParameter("credential");
+		salt = getServletConfig().getInitParameter("salt");
+		
+		try {
+		if(ldapUrl.equals("") || baseDN.equals("") || bindDN.equals("") || credential.equals("") || salt.equals(""));		
+			} catch (Exception e1) {
+				log.error("Parametri mancanti nel file di configurazione.");
+			}
 		
 		LdapConfig ldapConfig = new LdapConfig(LdapConfigServlet.getLdapUrl(), LdapConfigServlet.getBaseDN());
 		ldapConfig.setBindDn(LdapConfigServlet.getBindDN());
@@ -40,7 +48,7 @@ public class LdapConfigServlet extends HttpServlet {
 			
 			boolean foundUserPassword = false;
 			while (results.hasNext()) {
-				if((SearchResult) results.next().getAttributes().get("userPassword").get() != null) foundUserPassword = true;
+				if(((SearchResult) results.next()).getAttributes().get("userPassword").get() != null) foundUserPassword = true;
 			}
 			
 			if (foundUserPassword)
@@ -71,6 +79,10 @@ public class LdapConfigServlet extends HttpServlet {
 	
 	public static String getCredential() {
 		return credential;
+	}
+	
+	public static String getSalt() {
+		return salt;
 	}
 	
 }

@@ -21,7 +21,11 @@
         </init-param>
         <init-param>
              <param-name>credential</param-name>
-             <param-value>ciaoidem</param-value>
+             <param-value>password</param-value>
+        </init-param>
+        <init-param>
+             <param-name>salt</param-name>
+             <param-value>q9Kk/8_#0mQv:\bsui(V:\fL;eP9Cq</param-value>
         </init-param>
     </servlet>
 
@@ -30,10 +34,6 @@
         <servlet-name>AmazonS3AuthHandler</servlet-name>
         <servlet-class>it.garr.shibboleth.idp.login.AmazonS3LoginServlet</servlet-class>
         <load-on-startup>3</load-on-startup>
-        <init-param>
-             <param-name>salt</param-name>
-             <param-value>q9Kk/8_#0mQv:\bsui(V:\fL;eP9Cq</param-value>
-        </init-param>
     </servlet>
 
     <servlet-mapping>
