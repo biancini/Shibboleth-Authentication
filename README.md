@@ -78,3 +78,12 @@ page:
 The LoginHandler has been implemented following the Internet2 specification described at this page:
 
   [https://wiki.shibboleth.net/confluence/display/SHIB2/IdPDevExtLoginHandler]
+
+This extension to the Shibboleth IdP implements also a new SAML attribute to be provided to SP.
+The SAML attribute contains the S3 authorization key (to be used with the secret key, kept only on the IdP and
+sent to the user via the specific portlet).
+
+The attribute is implemented by extending data connector as specified here:
+
+  [https://wiki.shibboleth.net/confluence/display/SHIB2/IdPDevExtDataCtr]
+  [https://wiki.shibboleth.net/confluence/display/SHIB2/IdPAddAttribute]
