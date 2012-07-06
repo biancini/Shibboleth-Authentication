@@ -28,6 +28,55 @@
              <param-value>q9Kk/8_#0mQv:\bsui(V:\fL;eP9Cq</param-value>
         </init-param>
     </servlet>
+    
+    <!-- Servlet for retrieving S3 credentials -->
+    <servlet>
+        <servlet-name>AmazonS3Retrieve</servlet-name>
+        <servlet-class>it.garr.shibboleth.idp.retrieves3credentials.AmazonS3RetrieveServlet</servlet-class>
+        <load-on-startup>3</load-on-startup>
+        <init-param>
+             <param-name>mailHost</param-name>
+             <param-value>smtp.servername</param-value>
+        </init-param>
+        <init-param>
+             <param-name>mailHostPort</param-name>
+             <param-value>465</param-value>
+        </init-param>
+        <init-param>
+             <param-name>useSSL</param-name>
+             <param-value>true</param-value>
+        </init-param>
+        <init-param>
+             <param-name>mailUser</param-name>
+             <param-value>user</param-value>
+        </init-param>
+        <init-param>
+             <param-name>mailPass</param-name>
+             <param-value>password</param-value>
+        </init-param>
+        <init-param>
+             <param-name>mailFrom</param-name>
+             <param-value>garrbox@garr.it</param-value>
+        </init-param>
+        <init-param>
+             <param-name>mailSubject</param-name>
+             <param-value>GarrBox S3 SecretKey</param-value>
+        </init-param>
+        <init-param>
+             <param-name>mailText</param-name>
+             <param-value><![CDATA[<h1><font color='#0099CC'><b>&emsp;GarrBOX</b></font></h1><br/>
+                                   <i>&emsp;&emsp;Dear $USER$,<br/><br/>
+                                   &emsp;&emsp;As you requested Your <b>S3</b> GarrBox Secret Key is reported below.</i><br/><br/><br/>
+                                   <b>&emsp;&emsp;Secret Key:</b>&nbsp;$SECRET_KEY$<br/><br/><br/><br/>
+                                   &emsp;&emsp;<i>Best reguards,<br/>&emsp;&emsp;GarrBox Team</i>]]></param-value>
+        </init-param>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>AmazonS3Retrieve</servlet-name>
+        <url-pattern>/retrieveS3</url-pattern>
+    </servlet-mapping>
+
 
     <!-- Servlet for doing S3 authentication -->
     <servlet>
