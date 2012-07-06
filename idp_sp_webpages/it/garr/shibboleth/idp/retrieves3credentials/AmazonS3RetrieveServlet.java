@@ -38,27 +38,28 @@ public class AmazonS3RetrieveServlet extends HttpServlet{
 	private SessionManager<Session> sessionManager = null;
 	private String[] parameters = null;
 	private String email = null;
-	private String salt = null;
 	private static String secretKey = null;
+	private String user = null;
 	
 	@SuppressWarnings("unchecked")
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
 		
-		parameters = new String[6];
+		parameters = new String[8];
 		parameters[0] = getServletConfig().getInitParameter("mailHost");
 		parameters[1] = getServletConfig().getInitParameter("mailHostPort");
 		parameters[2] = getServletConfig().getInitParameter("mailUser");
 		parameters[3] = getServletConfig().getInitParameter("mailPass");
 		parameters[4] = getServletConfig().getInitParameter("mailFrom");
-		parameters[5] = null;
+		parameters[5] = null; // Mail recipient
+		parameters[6] = getServletConfig().getInitParameter("mailSubject");
+		parameters[7] = getServletConfig().getInitParameter("mailText");
 		
 		sessionManager = (SessionManager<Session>) getServletConfig().getServletContext().getAttribute("shibboleth.SessionManager");
 	}
 	
 	/** {@inheritDoc} */
-	protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {	
-		//Session shibSession = (Session) request.getAttribute(Session.HTTP_SESSION_BINDING_ATTRIBUTE);
+	protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		String entityId = request.getHeader("SP_EntityId");
 		String sessionIndex = request.getHeader("SessionIndex");
 		Session shibSession = sessionManager.getSession(sessionIndex);
@@ -66,46 +67,46 @@ public class AmazonS3RetrieveServlet extends HttpServlet{
 		else{
 			try {
 				ServiceInformation si = shibSession.getServicesInformation().get(entityId);
-				String user = si.getAuthenticationMethod().getAuthenticationPrincipal().getName();
-				try {
-					S3AccessorMethods.connectLdap(LdapConfigServlet.getLdapUrl(), LdapConfigServlet.getBaseDN(), LdapConfigServlet.getBindDN(), LdapConfigServlet.getCredential(), user);
-				} catch (NamingException e) {
-					log.error("I can't get data from ldap for user " + user + "\n" + e);
-				}
-				try {
-					email = S3AccessorMethods.getMail();
-					salt = LdapConfigServlet.getSalt();
-					secretKey = S3AccessorMethods.getSecretKey(salt);
-				} catch (Exception e) {
-					log.error("Errore nell'invio della mail \n" + e);
-				}
-				parameters[5] = email;
-				
+				user = si.getAuthenticationMethod().getAuthenticationPrincipal().getName();
+				S3AccessorMethods.connectLdap(LdapConfigServlet.getLdapUrl(), LdapConfigServlet.getBaseDN(), LdapConfigServlet.getBindDN(), LdapConfigServlet.getCredential(), user);
+			
+				secretKey = S3AccessorMethods.getSecretKey(LdapConfigServlet.getSalt());
+				parameters[5] = S3AccessorMethods.getMail();
 				sendMail(parameters);
-			} catch (MessagingException e) {
+			} catch (NamingException e) {
+				log.error("I can't get data from ldap for user " + user + "\n" + e);
+			}
+			catch (MessagingException e) {
 				log.error("Errore nell'invio della secret via mail: " + e);
+			}
+			catch (Exception e) {
+				log.error("Errore nell'invio della mail \n" + e);
 			}
 		}
 	}
 	
 	private boolean sendMail(String[] parameters) throws MessagingException{
-		int port = Integer.valueOf(parameters[1]).intValue();
-		if(port == 25) sendMailNormal(parameters);
-		else if(port == 465) sendMailSSL(parameters);
+		if(getServletConfig().getInitParameter("useSSL").equals("true")) sendMailSSL(parameters);
+		else sendMailNormal(parameters);
 		
 		return true;
 	}
 	
 	private boolean sendMailSSL(String[] parameters) throws MessagingException {
-		 
 		String host = parameters[0];
 	    int port = Integer.valueOf(parameters[1]).intValue();
 		final String user = parameters[2];
 		final String pass = parameters[3];
 		String from = parameters[4];
 		String to = parameters[5];
-		if(host==null || user==null || pass==null || from == null || to == null) throw new MessagingException("Errore invio mail, parametri mancanti.");
- 
+		String subject = parameters[6];
+		String text = parameters[7];
+		
+		if(host==null || user==null || pass==null || from==null || to==null || subject==null) throw new MessagingException("Errore invio mail, parametri mancanti.");
+		
+		text = text.replaceAll("\\$USER\\$", user);
+		text = text.replaceAll("\\$SECRET_KEY\\$", secretKey);
+		
 		Properties props = new Properties();
 		props.put("mail.smtp.host", host);
 		props.put("mail.smtp.socketFactory.port", port);
@@ -119,30 +120,17 @@ public class AmazonS3RetrieveServlet extends HttpServlet{
 			}
 		  });
 		//session.setDebug(true);
-		try {
- 
-			Message message = new MimeMessage(session);
-			message.setFrom(new InternetAddress(from));
-			message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
-			message.setSubject("GarrBox S3 SecretKey");
-			
-			message.setContent("<h1><font color='#0099CC'><b>&emsp;GarrBOX</b></font></h1><br/>" +
-					   "<i>&emsp;&emsp;Gentile utente, come richiesto inviamo la SecretKey, utile per l'accesso ai servizi <b>S3</b> di GarrBOX.</i><br/><br/><br/>" +
-					   "<b>&emsp;&emsp;SecretKey:</b> " + secretKey + "<br/><br/><br/><br/>" +
-					   "&emsp;&emsp;<i>Cordiali saluti,<br/>&emsp;&emsp;Il Team di GarrBox</i>",
-					   "text/html");
-			
-			Transport transport = session.getTransport("smtps");
-			transport.connect(host, user, pass);
-			message.saveChanges();
-			transport.sendMessage(message, message.getAllRecipients());
-			transport.close();
-			log.debug("Email sent to " + email);
- 
-		} catch (MessagingException e) {
-			throw new RuntimeException(e);
-		}
-		
+		Message message = new MimeMessage(session);
+		message.setFrom(new InternetAddress(from));
+		message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
+		message.setSubject(subject);
+		message.setContent(text,"text/html");
+		Transport transport = session.getTransport("smtps");
+		transport.connect(host, user, pass);
+		transport.sendMessage(message, message.getAllRecipients());
+		transport.close();
+		log.debug("Email sent to " + email);		
+
 		return true;
 	}
 	
@@ -154,36 +142,43 @@ public class AmazonS3RetrieveServlet extends HttpServlet{
 		String from = parameters[4];
 		String to = parameters[5];
 		if(host==null || user==null || pass==null || from == null || to == null) throw new MessagingException("Errore invio mail, parametri mancanti.");
-			//Get system properties
-			Properties props = System.getProperties( );
-			
-			//Setup mail server
-			props.put("mail.smtp.host", host);
-			props.put("mail.debug", "false");
-			props.put("mail.smtp.auth","true");
-			
-			//Get session
-			javax.mail.Session session = javax.mail.Session.getDefaultInstance(props, null);
-			session.setDebug(true);
-			session.setPasswordAuthentication(new URLName("smtp",host,port,"INBOX",user,pass), new PasswordAuthentication(user,pass));
-			
-			MimeMessage message = new MimeMessage(session);
-			message.setFrom(new InternetAddress(from));
-			message.addRecipient(Message.RecipientType.TO, new InternetAddress(to));
-			message.setSubject("GarrBox S3 SecretKey");
-			message.setContent("<h1><font color='#0099CC'><b>&emsp;GarrBOX</b></font></h1><br/>" +
-					   "<i>&emsp;&emsp;Gentile utente, come richiesto inviamo la SecretKey, utile per l'accesso ai servizi <b>S3</b> di GarrBOX.</i><br/><br/><br/>" +
-					   "<b>&emsp;&emsp;SecretKey:</b> " + secretKey + "<br/><br/><br/><br/>" +
-					   "&emsp;&emsp;<i>Cordiali saluti,<br/>&emsp;&emsp;Il Team di GarrBox</i>",
-					   "text/html");
-			//Send message
-			Transport tr = session.getTransport("smtp");
-			tr.connect(host, user, pass);
-			message.saveChanges();
-			tr.sendMessage(message, message.getAllRecipients());
-			tr.close();
+		  
+		StringBuffer sb = new StringBuffer( );
 		
-			return true;
+		//Get system properties
+		Properties props = System.getProperties( );
+		
+		//Setup mail server
+		props.put("mail.smtp.host", host);
+		props.put("mail.debug", "false");
+		props.put("mail.smtp.auth","true");
+		
+		//Get session
+		javax.mail.Session session = javax.mail.Session.getDefaultInstance(props, null);
+		session.setDebug(true);
+		session.setPasswordAuthentication(new URLName("smtp",host,port,"INBOX",user,pass), new PasswordAuthentication(user,pass));
+		
+		//Define message
+		MimeMessage msg = new MimeMessage(session);
+		//Set the from address
+		msg.setFrom(new InternetAddress(from));
+		//Set the to address
+		msg.addRecipient(Message.RecipientType.TO, new InternetAddress(to));
+		//Set the subject
+		msg.setSubject("GarrBox S3 SecretKey");
+		//Set the text content for body
+		sb.append("Come da richiesto inviamo la Secret key per l'accesso ai servizi S3 di GarrBOX.\n\n");
+		sb.append("SecretKey: " + secretKey + "\n\n");
+		sb.append("Cordiali saluti,.\nIl Team di GarrBox\n");
+		msg.setText(sb.toString( ));  
+		//Send message
+		Transport tr = session.getTransport("smtp");
+		tr.connect(host, user, pass);
+		msg.saveChanges(); // don't forget this
+		tr.sendMessage(msg, msg.getAllRecipients());
+		tr.close();
+
+		return true;
 	  } 
 	
 }
