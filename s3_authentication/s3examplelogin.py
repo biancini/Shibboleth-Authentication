@@ -3,16 +3,14 @@ from httpFunctions import http_methods
 import re
 import cookielib
 import socket
-import base64
-import hmac
-import sha
+import base64, hmac, sha
 
 class CumulusService():
     ssl_check = False
     cookies = cookielib.CookieJar()
 
     def canonical_string(self, method, path, headers):
-        return "GET\n\n\nFri, 29 Jun 2012 15:57:41 GMT\n/ciao_maamma/"
+        return "GET\n\n\nFri, 29 Jun 2012 15:57:41 GMT\n/ciao_mamma/"
 
     def authorize(self, headers, method, uri):
         host_name = socket.gethostbyaddr(socket.gethostname())
@@ -45,9 +43,6 @@ if __name__ == "__main__":
     cumulus_service = CumulusService()
 
     accessKey = base64.b64encode("http://idp-test1.mib.infn.it/shibboleth!fabio")
-    print accessKey
-    #accessKey = "TURTEQIGAJRPSEQTMOMFD"
-    #secretKey = "reXtIFhdk+JQjwDE1mf+oEmq1R4="
     secretKey = "8PPJM30JNEqnYyWFOobtJOWLuXtRaK+ZiIu2mOWz6splWxepnBDgQhi0bOLAJJgT"
 
     headers = {}
