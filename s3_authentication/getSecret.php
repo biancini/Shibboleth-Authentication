@@ -21,9 +21,7 @@ curl_setopt($curl_handle, CURLOPT_SSL_VERIFYHOST, 0);
 curl_setopt($curl_handle, CURLOPT_HTTPHEADER, array("SP_EntityId: " . $spEntityId, "SessionIndex: " . $_SERVER["Shib-Session-Index"]));
 if ($debug) curl_setopt($curl_handle, CURLOPT_HEADER, true);
 
-print "Chiamata";
 $result = curl_exec($curl_handle);
-print "---> $result";
 curl_close($curl_handle);
 
 if ($result['curl_error'] != "") {
