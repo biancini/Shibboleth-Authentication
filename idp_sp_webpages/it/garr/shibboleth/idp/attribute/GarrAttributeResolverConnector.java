@@ -1,7 +1,13 @@
 package it.garr.shibboleth.idp.attribute;
 
+import it.garr.shibboleth.idp.login.S3AccessorMethods;
+
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import edu.internet2.middleware.shibboleth.common.attribute.BaseAttribute;
 import edu.internet2.middleware.shibboleth.common.attribute.provider.BasicAttribute;
@@ -11,6 +17,8 @@ import edu.internet2.middleware.shibboleth.common.attribute.resolver.provider.da
 
 public class GarrAttributeResolverConnector extends BaseDataConnector {
 
+	private final Logger log = LoggerFactory.getLogger(GarrAttributeResolverConnector.class);
+	
 	/** {@inheritDoc} */
 	@SuppressWarnings("rawtypes")
 	public Map<String, BaseAttribute> resolve(ShibbolethResolutionContext resolutionContext)  throws AttributeResolutionException {
@@ -20,16 +28,16 @@ public class GarrAttributeResolverConnector extends BaseDataConnector {
 		
 		BaseAttribute<String> amazonS3AccessKey = new BasicAttribute<String>(); 
 		((BasicAttribute) amazonS3AccessKey).setId("amazonS3AccessKey");
-		amazonS3AccessKey.getValues().add(getAmazonS3AccessKey(entityId, username));
+		try {
+			amazonS3AccessKey.getValues().add(S3AccessorMethods.getStoredAccessKey(entityId, username));
+		}
+		catch (UnsupportedEncodingException e) {
+			log.error("Error while encoding 'amazonS3AccessKey' attribute.", e);
+			throw new AttributeResolutionException(e.getMessage());
+		}
 		result.put(amazonS3AccessKey.getId(), amazonS3AccessKey);
 		
 		return result;
-	}
-	
-	private String getAmazonS3AccessKey(String entityId, String username) {
-		// TODO: retrieve IdP entityId in some way
-		// TODO: string to be encoded base64
-		return entityId + "!" + username;
 	}
 
 	/** {@inheritDoc} */

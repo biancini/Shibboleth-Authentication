@@ -35,7 +35,11 @@ public class S3AccessorMethods {
 		if (!httpAuthorization.toLowerCase().startsWith("aws"))  throw new Exception("HTTP-Authorization header does not contains AWS.");
 		httpAuthorization = httpAuthorization.replaceAll(" ", "").substring(3);
 		
-		return decode64(httpAuthorization.split(":")[0]);
+		return decode64(httpAuthorization.split("!")[0]);
+	}
+	
+	public static String getStoredAccessKey(String entityId, String username) throws UnsupportedEncodingException {
+		return encode64((entityId + "!" + username).getBytes("UTF-8"));
 	}
 	
 	public static String getMail() throws Exception{
@@ -62,14 +66,14 @@ public class S3AccessorMethods {
 		httpAuthorization = httpAuthorization.replaceAll(" ", "").substring(3);
 		if (!httpAuthorization.startsWith(encode64(accessKey.getBytes())))  throw new Exception("Requesting authorization for a different access key.");
 		
-		return httpAuthorization.split(":")[1];
+		return httpAuthorization.split("!")[1];
 	}
 	
 	public static String getUsername(String accessKey) throws Exception {
 		if (userParameters == null || !userParameters.containsKey("uid")) throw new Exception("User parameters not loaded.");
 		return userParameters.get("uid");
 	}
-
+	
 	@SuppressWarnings("unchecked")
 	public static String createStringToSign(HttpServletRequest httpRequest) {
 		String httpMethod = httpRequest.getMethod();
@@ -218,16 +222,6 @@ public class S3AccessorMethods {
 		
 		return new String(decodedString, "UTF-8");
 	}
-	
-	/*public static String calculateSHA1(String messege) throws NoSuchAlgorithmException, UnsupportedEncodingException {
-	    byte[] convertme = messege.getBytes("UTF-8");
-		MessageDigest md = MessageDigest.getInstance("SHA-1");
-	    
-		String computedSha = new String(md.digest(convertme),"UTF-8"); 
-		log.debug("ASSOLUTAMENTE DA CANCELLARE DOPO LO SVILUPPO computedSha: " + computedSha);
-	    return computedSha;
-	}
-	*/
 	
 	private static String calculateSHA1(String text) throws NoSuchAlgorithmException, UnsupportedEncodingException  { 
 	    MessageDigest md;
