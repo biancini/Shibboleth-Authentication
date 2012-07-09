@@ -104,7 +104,7 @@ public class AmazonS3RetrieveServlet extends HttpServlet{
 		
 		if(host==null || user==null || pass==null || from==null || to==null || subject==null) throw new MessagingException("Errore invio mail, parametri mancanti.");
 		
-		text = text.replaceAll("\\$USER\\$", user);
+		text = text.replaceAll("\\$USER\\$", this.user);
 		text = text.replaceAll("\\$SECRET_KEY\\$", secretKey);
 		
 		Properties props = new Properties();
@@ -134,16 +134,17 @@ public class AmazonS3RetrieveServlet extends HttpServlet{
 		return true;
 	}
 	
-	private static boolean sendMailNormal(String[] parameters) throws MessagingException {
-	    String host = parameters[0];
+	private boolean sendMailNormal(String[] parameters) throws MessagingException {
+		String host = parameters[0];
 	    int port = Integer.valueOf(parameters[1]).intValue();
-		String user = parameters[2];
-		String pass = parameters[3];
+		final String user = parameters[2];
+		final String pass = parameters[3];
 		String from = parameters[4];
 		String to = parameters[5];
-		if(host==null || user==null || pass==null || from == null || to == null) throw new MessagingException("Errore invio mail, parametri mancanti.");
-		  
-		StringBuffer sb = new StringBuffer( );
+		String subject = parameters[6];
+		String text = parameters[7];
+		
+		if(host==null || user==null || pass==null || from==null || to==null || subject==null) throw new MessagingException("Errore invio mail, parametri mancanti.");
 		
 		//Get system properties
 		Properties props = System.getProperties( );
@@ -159,23 +160,22 @@ public class AmazonS3RetrieveServlet extends HttpServlet{
 		session.setPasswordAuthentication(new URLName("smtp",host,port,"INBOX",user,pass), new PasswordAuthentication(user,pass));
 		
 		//Define message
-		MimeMessage msg = new MimeMessage(session);
+		MimeMessage message = new MimeMessage(session);
 		//Set the from address
-		msg.setFrom(new InternetAddress(from));
+		message.setFrom(new InternetAddress(from));
 		//Set the to address
-		msg.addRecipient(Message.RecipientType.TO, new InternetAddress(to));
+		message.addRecipient(Message.RecipientType.TO, new InternetAddress(to));
 		//Set the subject
-		msg.setSubject("GarrBox S3 SecretKey");
+		message.setSubject(subject);
 		//Set the text content for body
-		sb.append("Come da richiesto inviamo la Secret key per l'accesso ai servizi S3 di GarrBOX.\n\n");
-		sb.append("SecretKey: " + secretKey + "\n\n");
-		sb.append("Cordiali saluti,.\nIl Team di GarrBox\n");
-		msg.setText(sb.toString( ));  
+		text = text.replaceAll("\\$USER\\$", this.user);
+		text = text.replaceAll("\\$SECRET_KEY\\$", secretKey);
+		message.setContent(text,"text/html");
 		//Send message
 		Transport tr = session.getTransport("smtp");
 		tr.connect(host, user, pass);
-		msg.saveChanges(); // don't forget this
-		tr.sendMessage(msg, msg.getAllRecipients());
+		message.saveChanges(); // don't forget this
+		tr.sendMessage(message, message.getAllRecipients());
 		tr.close();
 
 		return true;
