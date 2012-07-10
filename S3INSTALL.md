@@ -22,7 +22,7 @@ Pubblish of the servlets and handlers
 -------------------------------------
 
 The servlets and handlers developed must be defined in the `web.xml` in the `WEB-INF` of the idp webapplications.
-The modification to be added are:
+The modifications to be added are:
 
     <!-- Servlet with LDAP configurations -->
     <servlet>
@@ -147,11 +147,12 @@ In the first line, the opening tag of the XML has been modified to include the `
 
 Then a new LoginHandler is defined with the type `garr:AmazonS3` and the proper S3 authentication method.
 
+
 Configuration of the new attribute resolver
 -------------------------------------------
 
 The configuration of the attribute resolver is done in `IDP_HOME/conf/attribute-resolver.xml`.
-The modification to be added are:
+The modifications to be added are:
 
     <resolver:AttributeResolver xmlns:resolver="urn:mace:shibboleth:2.0:resolver" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
                             xmlns:pc="urn:mace:shibboleth:2.0:resolver:pc" xmlns:ad="urn:mace:shibboleth:2.0:resolver:ad" 
@@ -194,3 +195,18 @@ An example configuration of this filter is:
         <afp:PermitValueRule xsi:type="basic:ANY" />
     </afp:AttributeRule>
 
+
+Attribute configuration on the SP side
+--------------------------------------
+
+The new `amazonS3AccessKey` attribute must be properly configured also on the SP to be properly created in user session.
+The standard configuration file is placed in `SP_HOME/etc/shibboleth/attribute-map.xml`.
+
+The modifications to be added are:
+
+    <Attributes xmlns="urn:mace:shibboleth:2.0:attribute-map" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        ...
+        <Attribute name="urn:mace:dir:attribute-def:amazons3accesskey" id="amazonS3AccessKey" />
+        <Attribute name="urn:oid:0.9.2342.19200300.500.1.1" id="amazonS3AccessKey" />
+        ...
+    </Attributes>
