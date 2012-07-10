@@ -37,7 +37,7 @@ The page must expose two different contents depending on query string:
 
 To obtain more information on NSS modules, visit:
 
-  [http://www.gnu.org/software/libc/manual/html_node/Name-Service-Switch.html#Name-Service-Switch]
+  [http://www.gnu.org/software/libc/manual/html_node/Name-Service-Switch.html]
 
 
 JAAS module
@@ -73,7 +73,7 @@ The S3 LoginHandler permits an authentication via the standard Amazon S3 authori
 This mechanims uses a couple of keys called access key and secret key, as described in this
 page:
 
-  [http://docs.amazonwebservices.com/AmazonS3/latest/dev/RESTAuthentication.html#RESTAuthenticationQueryStringAuth]
+  [http://docs.amazonwebservices.com/AmazonS3/latest/dev/RESTAuthentication.html]
 
 The LoginHandler has been implemented following the Internet2 specification described at this page:
 
