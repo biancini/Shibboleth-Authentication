@@ -1,6 +1,6 @@
 package it.garr.shibboleth.idp.attribute;
 
-import it.garr.shibboleth.idp.login.S3AccessorMethods;
+import it.garr.shibboleth.idp.S3AccessorMethods;
 
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;

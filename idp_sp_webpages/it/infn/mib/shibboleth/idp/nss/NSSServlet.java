@@ -1,6 +1,6 @@
 package it.infn.mib.shibboleth.idp.nss;
 
-import it.infn.mib.shibboleth.idp.LdapConfigServlet;
+import it.garr.shibboleth.idp.LdapConfigServlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;

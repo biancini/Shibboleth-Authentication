@@ -1,7 +1,7 @@
 package it.garr.shibboleth.idp.retrieves3credentials;
 
-import it.garr.shibboleth.idp.login.S3AccessorMethods;
-import it.infn.mib.shibboleth.idp.LdapConfigServlet;
+import it.garr.shibboleth.idp.LdapConfigServlet;
+import it.garr.shibboleth.idp.S3AccessorMethods;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -62,16 +62,18 @@ public class AmazonS3RetrieveServlet extends HttpServlet{
 	protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		String entityId = request.getHeader("SP_EntityId");
 		String sessionIndex = request.getHeader("SessionIndex");
+		String accessKey = S3AccessorMethods.decode64(request.getHeader("AccessKey"));
+		
 		Session shibSession = sessionManager.getSession(sessionIndex);
-		if(shibSession==null) throw new ServletException("Unable to retrive session informations.");
+		if (shibSession == null) throw new ServletException("Unable to retrive session informations.");
 		else{
 			try {
 				ServiceInformation si = shibSession.getServicesInformation().get(entityId);
 				user = si.getAuthenticationMethod().getAuthenticationPrincipal().getName();
-				S3AccessorMethods.connectLdap(LdapConfigServlet.getLdapUrl(), LdapConfigServlet.getBaseDN(), LdapConfigServlet.getBindDN(), LdapConfigServlet.getCredential(), user);
+				S3AccessorMethods.connectLdap(accessKey);
 			
-				secretKey = S3AccessorMethods.getSecretKey(LdapConfigServlet.getSalt());
-				parameters[5] = S3AccessorMethods.getMail();
+				secretKey = S3AccessorMethods.getSecretKey(accessKey, LdapConfigServlet.getSalt());
+				parameters[5] = S3AccessorMethods.getMail(accessKey);
 				sendMail(parameters);
 			} catch (NamingException e) {
 				log.error("I can't get data from ldap for user " + user + "\n" + e);
@@ -157,7 +159,7 @@ public class AmazonS3RetrieveServlet extends HttpServlet{
 		//Get session
 		javax.mail.Session session = javax.mail.Session.getDefaultInstance(props, null);
 		session.setDebug(true);
-		session.setPasswordAuthentication(new URLName("smtp",host,port,"INBOX",user,pass), new PasswordAuthentication(user,pass));
+		session.setPasswordAuthentication(new URLName("smtp", host, port, "INBOX", user, pass), new PasswordAuthentication(user,pass));
 		
 		//Define message
 		MimeMessage message = new MimeMessage(session);

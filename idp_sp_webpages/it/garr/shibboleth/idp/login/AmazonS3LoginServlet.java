@@ -1,6 +1,6 @@
 package it.garr.shibboleth.idp.login;
 
-import it.infn.mib.shibboleth.idp.LdapConfigServlet;
+import it.garr.shibboleth.idp.S3AccessorMethods;
 
 import java.io.IOException;
 
@@ -72,29 +72,20 @@ public class AmazonS3LoginServlet extends HttpServlet {
 	 * @param request current authentication request
 	 * @throws LoginException thrown if there is a problem authenticating the user
 	 */
-	protected boolean authenticateUser(HttpServletRequest request) throws LoginException {
-		String accessKey = null;
+	protected boolean authenticateUser(HttpServletRequest request) throws LoginException {		
+		String accessKey = "unknown";
 		try {
 			accessKey = S3AccessorMethods.getAccessKey(request);
-		} catch (Exception e) {
-			log.error("Error while retriving the accessKey: " + e);
-			throw new LoginException("Error while retriving the accessKey.");
-		} 
-		
-		try {
 			log.debug("Attempting to authenticate user {}", accessKey);
 			
-			log.debug("Trying to connect to ldap: " + LdapConfigServlet.getLdapUrl() + " with baseDN: " + LdapConfigServlet.getBaseDN());
-			S3AccessorMethods.connectLdap(LdapConfigServlet.getLdapUrl(), LdapConfigServlet.getBaseDN(), LdapConfigServlet.getBindDN(), LdapConfigServlet.getCredential(), S3AccessorMethods.getUId(accessKey));
-			
-			if (S3AccessorMethods.getUsername(accessKey) != null){
-				log.debug("Utente " + accessKey + " trovato nel db ldap" + "\nDati utente: \n" + S3AccessorMethods.printUserParameters());
+			if (S3AccessorMethods.getUsername(accessKey) != null) {
+				log.debug("Utente " + accessKey + " trovato nel db ldap" + "\nDati utente: \n" + S3AccessorMethods.printUserParameters(accessKey));
 			} else {
 				log.debug("Utente " + accessKey + " non trovato in ldap");
 			}
 			
 			String stringToSign = S3AccessorMethods.getStringToSign(request);
-			String secretKey = S3AccessorMethods.getSecretKey(salt);
+			String secretKey = S3AccessorMethods.getSecretKey(accessKey, salt);
 			String calculatedSecret = S3AccessorMethods.encryptSignature(stringToSign, secretKey);
 			String incomingSecret = S3AccessorMethods.getIncomingAuthorization(request, accessKey);
 			String username = S3AccessorMethods.getUsername(accessKey);
@@ -114,11 +105,17 @@ public class AmazonS3LoginServlet extends HttpServlet {
 			request.setAttribute(LoginHandler.PRINCIPAL_KEY, new UsernamePrincipal(username));
 			request.setAttribute(LoginHandler.AUTHENTICATION_METHOD_KEY, authenticationMethod);
 			return true;
-		} catch (LoginException e) {
-			log.error("User authentication for " + accessKey + " failed");
+		}
+		catch (IOException e) {
+			log.error("Unable to retrieve accessKey from request.");
+			return false;
+		}
+		catch (LoginException e) {
+			log.error("User authentication for " + accessKey + " failed.");
 			throw e;
-		} catch (Throwable e) {
-			log.error("User authentication for " + accessKey + " failed");
+		}
+		catch (Throwable e) {
+			log.error("User authentication for " + accessKey + " failed.");
 			throw new LoginException("Unknown authentication error.");
 		}
 	}
