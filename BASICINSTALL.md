@@ -1,5 +1,5 @@
-Configuration of IdP and SP to authenticate via HTTP Basic Authentication
-=========================================================================
+Configuration to authenticate via HTTP Basic Authentication
+===========================================================
 
 
 Goal of the configuration
