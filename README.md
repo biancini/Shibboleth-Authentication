@@ -24,5 +24,6 @@ Detailed installation instructions can be found on the wiki page of this project
 
 Contributing
 ------------
-Want to contribute? Great!
-Check my code and fork it!
+Want to contribute? Great! Check my code and fork it!
+
+Or contact me at [andrea.biancini AT gmail.com].
