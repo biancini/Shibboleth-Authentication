@@ -19,7 +19,7 @@ Installation instruction
 
 Detailed installation instructions can be found on the wiki page of this project.
 
-  [[Wiki pages of Shibboleth-Autentication project](wiki)]
+  [[Wiki pages of Shibboleth-Autentication project](Shibboleth-Authentication/wiki)]
 
 
 Contributing
