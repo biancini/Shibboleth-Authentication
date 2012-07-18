@@ -70,7 +70,7 @@ public class LoginMain {
 	 */
 	private static EngineConfiguration createCookieTokenConfig(Map<String, String> cookies) throws Exception { 
 		SimpleProvider clientConfig=new SimpleProvider(); 
-		Handler cookieHandler= (Handler) new CookieHandler(cookies);
+		Handler cookieHandler = (Handler) new CookieHandler(cookies);
 		SimpleChain reqHandler = new SimpleChain(); 
 		SimpleChain respHandler = new SimpleChain(); 
 		reqHandler.addHandler(cookieHandler); 
