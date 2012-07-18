@@ -64,27 +64,30 @@ public class AmazonS3RetrieveServlet extends HttpServlet{
 		String sessionIndex = request.getHeader("SessionIndex");
 		String accessKey = S3AccessorMethods.decode64(request.getHeader("AccessKey"));
 		
+		try {
+			//user = getUserNameFromSession(entityId, sessionIndex);
+			user = S3AccessorMethods.getUid(accessKey);
+			S3AccessorMethods.connectLdap(accessKey);
+		
+			secretKey = S3AccessorMethods.getSecretKey(accessKey, LdapConfigServlet.getSalt());
+			parameters[5] = S3AccessorMethods.getMail(accessKey);
+			sendMail(parameters);
+		} catch (NamingException e) {
+			log.error("I can't get data from ldap for user " + user + "\n" + e);
+		}
+		catch (MessagingException e) {
+			log.error("Errore nell'invio della secret via mail: " + e);
+		}
+		catch (Exception e) {
+			log.error("Errore nell'invio della mail \n" + e);
+		}
+	}
+	
+	protected String getUserNameFromSession(String entityId, String sessionIndex)  throws ServletException {
 		Session shibSession = sessionManager.getSession(sessionIndex);
 		if (shibSession == null) throw new ServletException("Unable to retrive session informations.");
-		else{
-			try {
-				ServiceInformation si = shibSession.getServicesInformation().get(entityId);
-				user = si.getAuthenticationMethod().getAuthenticationPrincipal().getName();
-				S3AccessorMethods.connectLdap(accessKey);
-			
-				secretKey = S3AccessorMethods.getSecretKey(accessKey, LdapConfigServlet.getSalt());
-				parameters[5] = S3AccessorMethods.getMail(accessKey);
-				sendMail(parameters);
-			} catch (NamingException e) {
-				log.error("I can't get data from ldap for user " + user + "\n" + e);
-			}
-			catch (MessagingException e) {
-				log.error("Errore nell'invio della secret via mail: " + e);
-			}
-			catch (Exception e) {
-				log.error("Errore nell'invio della mail \n" + e);
-			}
-		}
+		ServiceInformation si = shibSession.getServicesInformation().get(entityId);
+		return si.getAuthenticationMethod().getAuthenticationPrincipal().getName();
 	}
 	
 	private boolean sendMail(String[] parameters) throws MessagingException{
