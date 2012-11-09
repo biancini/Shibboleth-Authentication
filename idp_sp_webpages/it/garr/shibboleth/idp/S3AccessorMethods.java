@@ -268,9 +268,7 @@ public class S3AccessorMethods {
                 halfbyte = data[i] & 0x0F;
             } while(two_halfs++ < 1);
         } 
-        String computedSHA = buf.toString();
-        //
-        return computedSHA;
+        return buf.toString();
     } 
 	
 	private static byte[] encryptHSHA1(String messege, String key) throws UnsupportedEncodingException, NoSuchAlgorithmException, InvalidKeyException {
