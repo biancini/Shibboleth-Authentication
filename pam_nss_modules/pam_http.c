@@ -13,18 +13,23 @@
 
 #include "netcurl.h"
 
+typedef struct _SESSION
+{
+  char *key;
+  char *value;
+  struct _SESSION *next;
+} SESSION;
+
 SESSION *session = NULL;
 
-char *getsessvalue(const char *key)
+static char *getsessvalue(const char *key)
 {
   SESSION *cursor = session;
   while (cursor)
   {
-    if (strcasestr(cursor->key, key))
+    if (!strcasecmp(cursor->key, key))
     {
-      char *sessvalue = (char *) malloc(strlen(cursor->value)+1);
-      strcpy(sessvalue, cursor->value);
-      return sessvalue;
+      return cursor->value;
     }
     cursor = cursor->next;
   }
@@ -32,55 +37,66 @@ char *getsessvalue(const char *key)
   return NULL;
 }
 
-void cleansession(SESSION *cursor)
-{
-  if (cursor->next != NULL) cleansession(cursor->next);
-  if (cursor->key != NULL) free(cursor->key);
-  if (cursor->value != NULL) free(cursor->value);
-  free(cursor);
-}
-
 void cleanbody()
 {
-  if (session == NULL) return;
-  cleansession(session);
-  session = NULL;
+  while(session)
+  {
+    SESSION *next = session->next;
+    free(session);
+    session = next;
+  }
 }
 
 size_t bodycallback(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
+  size_t ret = size*nmemb;
   char* pstr = (char *)malloc(size*nmemb+1);
+
+  if(!pstr)
+    return 0;
   strncpy(pstr, ptr, size*nmemb);
   pstr[size*nmemb] = '\0';
 
   int i = 0;
-  char **rows = split_str(pstr, "\n", -1);
-  
-  if (rows == NULL || rows[0] == NULL) return nmemb*size;
+  char **rows = split_str(pstr, "\n");
+
+  /* impossible, for this to happen curl should
+  invoke this function with ptr == NULL */  
+  if (rows == NULL || rows[0] == NULL)
+  {
+     ret = 0;
+     goto on_err;
+  }
+
   for (i = 0; rows[i]; i++)
   {
-    if (strstr(rows[i], "="))
+    char *peq = NULL;
+    replace_char(rows[i], '\r', '\0');
+    if (NULL != (peq = strchr(rows[i], '=')))
     {
-      replace_char(rows[i], '\r', '\0');
-      char **array = split_str(rows[i], "=", 1);
-      if (array == NULL || array[0] == NULL || array[1] == NULL) return nmemb*size;
+      char *key = rows[i],
+           *value = peq + 1;
+      *peq = '\0';
 
       #ifdef DEBUG
-      fprintf(stderr, "Read session value: [%s] => %s\n", array[0], array[1]);
+      fprintf(stderr, "Read session value: [%s] => %s\n", key, value);
       #endif
 
-      SESSION *cursess = (SESSION *) malloc(sizeof(SESSION));
-      cursess->key = (char *) malloc(strlen(array[0])+1);
-      strcpy(cursess->key, array[0]);
-      cursess->value = (char *) malloc(strlen(array[1])+1);
-      strcpy(cursess->value, array[1]);
+      SESSION *cursess = (SESSION *) malloc(sizeof(SESSION) + strlen(key) + strlen(value) + 2);
+      cursess->key = (char *) ((char *)cursess + sizeof(SESSION));
+      cursess->value = (char *) ((char *)cursess + sizeof(SESSION) + strlen(key) + 1);
+      strcpy(cursess->key, key);
+      strcpy(cursess->value, value);
       cursess->next = session;
       session = cursess;
-      free(array);
     }
   }
 
-  return nmemb*size;
+on_err:
+  if(rows) free(rows);
+  if(pstr) free(pstr);
+
+  return ret;
 }
 
 /* pam arguments are normally of the form name=value.  This gets the
@@ -108,11 +124,10 @@ const char *get_password(pam_handle_t *pamh, const char *username, int flags, in
   const struct pam_message *msgp;
   struct pam_response *respp;
   struct pam_conv *item;
-  char *message;
-  int i = 0;
+  char message[128];
 
   rc = pam_get_item(pamh, PAM_AUTHTOK, (const void **) &password);
-  if (rc == PAM_SUCCESS && (use_first_pass || try_first_pass)) return password;
+  if (rc == PAM_SUCCESS && (use_first_pass || try_first_pass)) return strdup(password);
 
   if ((flags & PAM_SILENT) == PAM_SILENT)
   {
@@ -128,15 +143,18 @@ const char *get_password(pam_handle_t *pamh, const char *username, int flags, in
 
   msgp = &msg;
 
-  message = (char *) malloc(strlen(username) + 14);
-  for (i = 0; i < strlen(username) + 14; i++) message[i] = '\0';
-  sprintf(message, "%s's password: ", username);
+  snprintf(message, 128, "%s's password: ", username);
 
   msg.msg_style = PAM_PROMPT_ECHO_OFF;
   msg.msg = message;
 
-  item->conv(1, &msgp, &respp, item->appdata_ptr);
-  return respp[0].resp;
+  if(item->conv(1, &msgp, &respp, item->appdata_ptr))
+    return NULL;
+
+  password = respp[0].resp;
+  free(respp);
+
+  return password;
 }
 
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
@@ -189,8 +207,8 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
     }
   }
 
-  memset((void *)password, '\0', strlen(password));
-  free((void *)password);
+  memset((void*)password, '\0', strlen(password));
+  free((void*)password);
 
   return rv;
 }
@@ -234,7 +252,7 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc, const c
   #endif
 
   char *authed = getsessvalue(key);
-  if (authed != NULL && strcasestr(authed, value)) return PAM_SUCCESS;
+  if (authed != NULL && !strcasecmp(authed, value)) return PAM_SUCCESS;
   return PAM_AUTH_ERR;
 }
 

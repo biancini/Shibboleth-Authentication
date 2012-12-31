@@ -207,7 +207,7 @@ size_t bodycallback(char *ptr, size_t size, size_t nmemb, void *userdata)
   char* pstr = (char *)ptr;
 
   replace_char(pstr, '\r', ':');
-  char **rows = split_str(pstr, "\n", -1);
+  char **rows = split_str(pstr, "\n");
   if (rows == NULL || rows[0] == NULL)
   {
     free(rows);
@@ -250,7 +250,7 @@ enum nss_status _nss_shib_getpwnam_r(const char *name, struct passwd *result, ch
     char *cur_row = (char *)malloc(strlen(cursor->row)+1);
     strcpy(cur_row, cursor->row);
     int count_separator = count_char_in_str(cur_row, ':');
-    char **array = split_str(cur_row, ":", -1);
+    char **array = split_str(cur_row, ":");
     if (array[0] != NULL && count_separator >= 6)
     {
       if (strcmp(array[0], name) == 0)
@@ -305,7 +305,7 @@ enum nss_status _nss_shib_getpwuid_r(uid_t uid, struct passwd *result, char *buf
     char *cur_row = (char *)malloc(strlen(cursor->row)+1);
     strcpy(cur_row, cursor->row);
     int count_separator = count_char_in_str(cur_row, ':');
-    char **array = split_str(cur_row, ":", -1);
+    char **array = split_str(cur_row, ":");
     if (array[0] != NULL && count_separator >= 6)
     {
       if (atoi(array[2]) == uid)
@@ -373,7 +373,7 @@ enum nss_status _nss_shib_getpwent_r(struct passwd *result, char *buffer, size_t
       char *cur_row = (char *)malloc(strlen(cursor->row)+1);
       strcpy(cur_row, cursor->row);
       int count_separator = count_char_in_str(cur_row, ':');
-      char **array = split_str(cur_row, ":", -1);
+      char **array = split_str(cur_row, ":");
       if (array[0] != NULL && count_separator >= 6)
       {
         result->pw_name = (char *)malloc(strlen(array[0])+1);
@@ -452,7 +452,7 @@ enum nss_status _nss_shib_getgrent_r(struct group *result, char *buffer, size_t 
       char *cur_row = (char *)malloc(strlen(cursor->row)+1);
       strcpy(cur_row, cursor->row);
       int count_separator = count_char_in_str(cur_row, ':');
-      char **array = split_str(cur_row, ":", -1);
+      char **array = split_str(cur_row, ":");
       if (array[0] != NULL && count_separator >= 3)
       {
         result->gr_name = (char *) malloc(strlen(array[0])+1);
@@ -463,7 +463,7 @@ enum nss_status _nss_shib_getgrent_r(struct group *result, char *buffer, size_t 
         result->gr_mem = (char **) malloc(sizeof(char **));
 
         int j = 0;
-        char **members = split_str(array[3], ",", -1);
+        char **members = split_str(array[3], ",");
         for (j = 0; ; j++)
         {
           result->gr_mem = (char **) realloc(result->gr_mem, (j+1)*sizeof(char *));
@@ -516,7 +516,7 @@ enum nss_status _nss_shib_getgrnam_r(const char *name, struct group *result, cha
     char *cur_row = (char *)malloc(strlen(cursor->row)+1);
     strcpy(cur_row, cursor->row);
     int count_separator = count_char_in_str(cur_row, ':');
-    char **array = split_str(cur_row, ":", -1);
+    char **array = split_str(cur_row, ":");
     if (array[0] != NULL && count_separator >= 3)
     {
       if (strcmp(array[0], name) == 0)
@@ -529,7 +529,7 @@ enum nss_status _nss_shib_getgrnam_r(const char *name, struct group *result, cha
         result->gr_mem = (char **) malloc(sizeof(char **));
 
         int j = 0;
-        char **members = split_str(array[3], ",", -1);
+        char **members = split_str(array[3], ",");
         for (j = 0; ;j++)
         {
           result->gr_mem = (char **) realloc(result->gr_mem, (j+1)*sizeof(char *));
@@ -579,7 +579,7 @@ enum nss_status _nss_shib_getgrgid_r(gid_t gid, struct group *result, char *buff
     char *cur_row = (char *)malloc(strlen(cursor->row)+1);
     strcpy(cur_row, cursor->row);
     int count_separator = count_char_in_str(cur_row, ':');
-    char **array = split_str(cur_row, ":", -1);
+    char **array = split_str(cur_row, ":");
     if (array[0] != NULL  && count_separator >= 3 && atoi(array[2]) == gid)
     {
       result->gr_name = (char *) malloc(strlen(array[0])+1);
@@ -590,7 +590,7 @@ enum nss_status _nss_shib_getgrgid_r(gid_t gid, struct group *result, char *buff
       result->gr_mem = (char **) malloc(sizeof(char **));
 
       int j = 0;
-      char **members = split_str(array[3], ",", -1);
+      char **members = split_str(array[3], ",");
       for (j = 0; ;j++)
       {
         result->gr_mem = (char **) realloc(result->gr_mem, (j+1)*sizeof(char *));

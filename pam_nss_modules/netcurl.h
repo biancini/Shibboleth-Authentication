@@ -1,9 +1,5 @@
-typedef struct _SESSION
-{
-  char *key;
-  char *value;
-  struct _SESSION *next;
-} SESSION;
+#ifndef _NETCURL_H_
+#define _NETCURL_H_
 
 typedef struct _BODY
 {
@@ -17,9 +13,10 @@ int count_char_in_str(char *str, char find);
 char *replace_char(char *str, char orig, char rep);
 char *replace_str(char *str, char *orig, char *rep);
 char *extract_str(char *str, const char start, const char end);
-char **split_str(char *str, const char *delimiters, int max_splits);
+char **split_str(char *str, const char *delimiters);
 void cleanbody(void);
 size_t bodycallback(char *ptr, size_t size, size_t nmemb, void *userdata);
-size_t headercallback(void *ptr, size_t size, size_t nmemb, void *userdata);
 int geturl(const char *url, const char *username, const char *password, const char *cafile, const char *sslcheck);
-char *getsessvalue(const char *key);
+
+#endif /*_NETCURL_H_*/
+
