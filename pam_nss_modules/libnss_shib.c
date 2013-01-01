@@ -5,7 +5,6 @@
 #include <ctype.h>
 #include <syslog.h>
 #include <libconfig.h>
-#include <sys/types.h>
 #include <sys/param.h>
 
 #include <pwd.h>
@@ -13,7 +12,7 @@
 #include <nss.h>
 
 #include <curl/curl.h>
-#include <curl/types.h>
+/*#include <sys/types.h>*/
 #include <curl/easy.h>
 #include "netcurl.h"
 

@@ -6,14 +6,17 @@
 #include <syslog.h>
 
 #include <curl/curl.h>
-#include <curl/types.h>
+/*#include <curl/types.h>*/
 #include <curl/easy.h>
 #include "netcurl.h"
 
 struct curl_slist *cookies = NULL;
 
+void free_cookies();
+
 void set_cookies(struct curl_slist *newcookies)
 {
+  if(cookies) free_cookies();
   cookies = newcookies;
 }
 
@@ -58,21 +61,33 @@ char *replace_char(char *str, char orig, char rep)
   return str;
 }
 
-char *replace_str(char *str, char *orig, char *rep)
+char *replace_str(const char *str, const char *find, const char *rep)
 {
-  static char buffer[2048];
-  char *p = NULL;
+  int 		count = 0;
+  const char 	*ins = str,
+		*tmp = NULL;
+  char		*ret = NULL;
+  const size_t	len_find = strlen(find),
+		len_rep = strlen(rep);
 
-  if(!(p = strstr(str, orig))) return str;
+  for(count = 0; 0 != (tmp = strstr(ins, find)); ++count)
+   ins = tmp + len_find;
 
-  strncpy(buffer, str, p-str);
-  buffer[p-str] = '\0';
+  char *tmp2 = ret = (char*)malloc(strlen(str) + (len_rep - len_find)*count + 1);
+  if(!ret)
+    return NULL;
 
-  sprintf(buffer+(p-str), "%s%s", rep, p+strlen(orig));
+  while(count--)
+  {
+    ins = strstr(str, find);
+    const size_t cp_size = ins - str;
+    tmp2 = strncpy(tmp2, str, cp_size) + cp_size;
+    tmp2 = strcpy(tmp2, rep) + len_rep;
+    str += cp_size + len_rep;
+  }
+  strcpy(tmp2, str);
 
-  char *ret_val = (char *) malloc(strlen(buffer)+1);
-  strcpy(ret_val, buffer);
-  return ret_val;
+  return ret;
 }
 
 char *extract_str(char *str, const char start, const char end)
@@ -135,7 +150,8 @@ char **split_str(char *str, const char *delimiters)
 
 static size_t headercallback(void *ptr, size_t size, size_t nmemb, void *userdata)
 {
-  char * eqsign = NULL;
+  char	*eqsign = NULL,
+	*newstr = NULL;
   if (ptr == NULL) return -1;
 
   char *pstr = (char *)ptr;
@@ -143,41 +159,43 @@ static size_t headercallback(void *ptr, size_t size, size_t nmemb, void *userdat
   char headcookie[] = "Set-Cookie";
   if (strcasestr(pstr, headcookie))
   {
-    char *newstr = extract_str(pstr, ' ', ';');
+    newstr = extract_str(pstr, ' ', ';');
     eqsign = strchr(newstr, '=');
 
     int found = 1;
     struct curl_slist *cursor = cookies;
-    while (cursor)
-    {
-      if (eqsign)
+
+    if(eqsign) {
+      *eqsign = '\0'; 
+
+      while (cursor)
       {
-        *eqsign = '\0';
-        if (!strcasecmp(cursor->data, newstr))
+        if (strcasestr(cursor->data, newstr))
         {
           free(cursor->data);
           *eqsign = '=';
-          cursor->data = (char *)malloc(strlen(newstr)+1);
-          strcpy(cursor->data, newstr);
+          cursor->data = strdup(newstr);
+          if(!cursor->data) goto on_err;
           found = 0;
         }
-        else *eqsign = '=';
       }
 
       cursor = cursor->next;
+      *eqsign = '=';
     }
 
     if (found != 0)
     {
       struct curl_slist *curcookie = (struct curl_slist *) malloc(sizeof(struct curl_slist));
-      curcookie->data = (char *) malloc(strlen(newstr)+1);
-      strcpy(curcookie->data, newstr);
+      curcookie->data = strdup(newstr);
+      if(!cursor->data) goto on_err;
       curcookie->next = cookies;
       cookies = curcookie;
     }
-    
-    free(newstr);
   }
+
+on_err:
+  if(newstr) free(newstr);
 
   return nmemb * size;  
 }
