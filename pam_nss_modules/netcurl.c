@@ -178,9 +178,9 @@ static size_t headercallback(void *ptr, size_t size, size_t nmemb, void *userdat
           if(!cursor->data) goto on_err;
           found = 0;
         }
+        cursor = cursor->next;
       }
 
-      cursor = cursor->next;
       *eqsign = '=';
     }
 
@@ -188,7 +188,7 @@ static size_t headercallback(void *ptr, size_t size, size_t nmemb, void *userdat
     {
       struct curl_slist *curcookie = (struct curl_slist *) malloc(sizeof(struct curl_slist));
       curcookie->data = strdup(newstr);
-      if(!cursor->data) goto on_err;
+      if(!curcookie->data) goto on_err;
       curcookie->next = cookies;
       cookies = curcookie;
     }

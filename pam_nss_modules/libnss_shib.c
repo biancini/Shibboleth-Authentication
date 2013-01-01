@@ -44,23 +44,48 @@ void print_body(BODY *pointer)
 }
 #endif
 
-void free_body(BODY *cursor)
-{
-  if (cursor->next != NULL) free_body(cursor->next);
-  free(cursor->row);
-  free(cursor);
-}
-
 void cleanbody()
 {
-  if (body != NULL) free_body(body);
-  body = NULL;
+  while(body)
+  {
+    BODY *next = body->next;
+    free(body);
+    body = next;
+  }
+}
+
+static void readconfig_value(config_t *cfg, const char *valname, const char **value)
+{
+  if (*value == NULL)
+  {
+    const char *val = NULL;
+    if (CONFIG_TRUE != config_lookup_string(cfg, valname, &val)) goto on_err;
+
+    *value = strdup(val);
+    if (*value == NULL) goto on_err;
+
+    #ifdef DEBUG
+    fprintf(stderr, "Read property [%s] => %s\n", valname, *value);
+    #endif
+  }
+
+  return;
+on_err:
+  #ifdef DEBUG
+  fprintf(stderr, "Error reading property [%s]\n", valname);
+  #endif
+
+  if (*value) free((void*)*value);
+  *value = NULL;
 }
 
 static void readconfig()
 {
+  #ifdef DEBUG
+  fprintf(stderr, "Reading configuration file...");
+  #endif
+
   config_t cfg;
-  const char *val = NULL;
 
   config_init(&cfg);
   if (!config_read_file(&cfg, config_file))  
@@ -77,71 +102,30 @@ static void readconfig()
     return;
   }
 
-  if (url == NULL)
-  {
-    config_lookup_string(&cfg, "url", &val);
-    url = (const char *)malloc(strlen(val)+1);
-    strcpy((char *)url, val);
-    #ifdef DEBUG
-    fprintf(stderr, "Read property [url] => %s\n", url);
-    #endif
-  }
-
-  if (cafile == NULL)
-  {
-    config_lookup_string(&cfg, "cafile", &val);
-    cafile = (const char *)malloc(strlen(val)+1);
-    strcpy((char *)cafile, val);
-    #ifdef DEBUG
-    fprintf(stderr, "Read property [cafile] => %s\n", cafile);
-    #endif
-  }
-
-  if (sslcheck == NULL)
-  {
-    config_lookup_string(&cfg, "sslcheck", &val);
-    sslcheck = (const char *)malloc(strlen(val)+1);
-    strcpy((char *)sslcheck, val);
-    #ifdef DEBUG
-    fprintf(stderr, "Read property [sslcheck] => %s\n", sslcheck);
-    #endif
-  }
-
-  if (username == NULL)
-  {
-    config_lookup_string(&cfg, "username", &val);
-    username = (const char *)malloc(strlen(val)+1);
-    strcpy((char *)username, val);
-    #ifdef DEBUG
-    fprintf(stderr, "Read property [username] => %s\n", username);
-    #endif
-  }
-
-  if (password == NULL)
-  {
-    config_lookup_string(&cfg, "password", &val);
-    password = (const char *)malloc(strlen(val)+1);
-    strcpy((char *)password, val);
-    #ifdef DEBUG
-    fprintf(stderr, "Read property [password] => %s\n", password);
-    #endif
-  }
+  readconfig_value(&cfg, "url", &url);
+  readconfig_value(&cfg, "cafile", &cafile);
+  readconfig_value(&cfg, "sslcheck", &sslcheck);
+  readconfig_value(&cfg, "username", &username);
+  readconfig_value(&cfg, "password", &password);
 
   if (get_cookies() == NULL)
   {
-    config_lookup_string(&cfg, "cookie_num", &val);
+    const char *val = NULL;
+    readconfig_value(&cfg, "cookie_num", &val);
+    if (val == NULL) goto end_config;
     int num_cookies = atoi(val);
+
     if (num_cookies > 0)
     {
       int i = 1;
       for (i = 1; i <= num_cookies; i++)
       {
         char strkey[512];
+        const char *cookie_name = NULL,
+                   *cookie_value = NULL;
 
         sprintf(strkey, "cookie_%d_name", i);
-        config_lookup_string(&cfg, &strkey[0], &val);
-        char *cookie_name = (char *) malloc(strlen(val)+1);
-        strcpy(cookie_name, val);
+        readconfig_value(&cfg, &strkey[0], &cookie_name);
 
         char *cur_nam = strstr(cookie_name, "$");
         while (cur_nam != NULL)
@@ -153,7 +137,7 @@ static void readconfig()
           free(cur_var_name);
 
           char *new_cookie_name = replace_str(cookie_name, cur_var_fname, cur_var_value);
-          free(cookie_name);
+          free((void*)cookie_name);
           cookie_name = new_cookie_name;
           if (cur_var_fname != NULL) free(cur_var_fname);
 
@@ -161,9 +145,7 @@ static void readconfig()
         }
 
         sprintf(strkey, "cookie_%d_value", i);
-        config_lookup_string(&cfg, &strkey[0], &val);
-        char *cookie_value = (char *) malloc(strlen(val)+1);
-        sprintf(cookie_value, val);
+        readconfig_value(&cfg, &strkey[0], &cookie_value);
 
         char *cur_var = strstr(cookie_value, "$");
         while (cur_var != NULL)
@@ -175,7 +157,7 @@ static void readconfig()
           free(cur_var_name);
 
           char *new_cookie_value = replace_str(cookie_value, cur_var_fname, cur_var_value);
-          free(cookie_value);
+          free((void*)cookie_value);
           cookie_value = new_cookie_value;
           if (cur_var_fname != NULL) free(cur_var_fname);
 
@@ -192,12 +174,13 @@ static void readconfig()
         fprintf(stderr, "Read new cookie: [%s] => %s\n", cookie_name, cookie_value);
         #endif
 
-        free(cookie_name);
-        free(cookie_value);
+        free((void*)cookie_name);
+        free((void*)cookie_value);
       }
     }
   }
 
+end_config:
   config_destroy(&cfg); 
 }
 
@@ -220,8 +203,8 @@ size_t bodycallback(char *ptr, size_t size, size_t nmemb, void *userdata)
     fprintf(stderr, "Read body line: %s\n", rows[i]);
     #endif
 
-    BODY *curbody = (BODY *) malloc(sizeof(BODY));
-    curbody->row = (char *) malloc(strlen(rows[i])+1);
+    BODY *curbody = (BODY *) malloc(sizeof(BODY) +  strlen(rows[i]) + 1);
+    curbody->row = (char *) ((char*)curbody + sizeof(BODY));
     strcpy(curbody->row, rows[i]);
     curbody->next = body;
     body = curbody;
