@@ -3,8 +3,8 @@
 
 typedef struct _BODY
 {
-  char *row;
-  struct _BODY *next;
+	char *row;
+	struct _BODY *next;
 } BODY;
 
 struct curl_slist *get_cookies(void);
