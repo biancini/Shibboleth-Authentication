@@ -12,19 +12,6 @@
 
 struct curl_slist *cookies = NULL;
 
-void free_cookies();
-
-void set_cookies(struct curl_slist *newcookies)
-{
-  if(cookies) free_cookies();
-  cookies = newcookies;
-}
-
-struct curl_slist *get_cookies()
-{
-  return cookies;
-}
-
 void free_cookies()
 {
   while (cookies)
@@ -34,6 +21,16 @@ void free_cookies()
     free(cookies);
     cookies = next;
   }
+}
+
+void set_cookies(struct curl_slist *newcookies)
+{
+  cookies = newcookies;
+}
+
+struct curl_slist *get_cookies()
+{
+  return cookies;
 }
 
 int count_char_in_str(char *str, char find)

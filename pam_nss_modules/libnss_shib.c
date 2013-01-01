@@ -6,13 +6,15 @@
 #include <syslog.h>
 #include <libconfig.h>
 #include <sys/param.h>
+#include <sys/types.h>
+#include <regex.h>
 
 #include <pwd.h>
 #include <grp.h>
 #include <nss.h>
+#include <errno.h>
 
 #include <curl/curl.h>
-/*#include <sys/types.h>*/
 #include <curl/easy.h>
 #include "netcurl.h"
 
@@ -81,6 +83,7 @@ on_err:
 
 static void readconfig()
 {
+  const char	*val = NULL;
   #ifdef DEBUG
   fprintf(stderr, "Reading configuration file...");
   #endif
@@ -110,78 +113,97 @@ static void readconfig()
 
   if (get_cookies() == NULL)
   {
-    const char *val = NULL;
+    int		i = 0;
+    regex_t	envVar;
     readconfig_value(&cfg, "cookie_num", &val);
     if (val == NULL) goto end_config;
     int num_cookies = atoi(val);
 
-    if (num_cookies > 0)
+    if(regcomp(&envVar, "\\$\\{[a-zA-Z0-9_-]+\\}", REG_EXTENDED))
+      goto end_config;
+
+    for(i=1; i <= num_cookies; ++i)
     {
-      int i = 1;
-      for (i = 1; i <= num_cookies; i++)
+      char 	strkey[512],
+      		*cookie_name = NULL,
+                *cookie_value = NULL;
+
+      sprintf(strkey, "cookie_%d_name", i);
+      readconfig_value(&cfg, strkey, (const char **)&cookie_name);
+      sprintf(strkey, "cookie_%d_value", i);
+      readconfig_value(&cfg, strkey, (const char **)&cookie_value);
+      if(!cookie_value || !cookie_name)
+        goto on_gen_err;
+      /* expand cookie_name */
+      char		*tmpVal = cookie_name,
+			tmpBuf[2048];
+      tmpBuf[0] = '\0';
+      regmatch_t	match; 
+      while(!regexec(&envVar, tmpVal, 1, &match, 0))
       {
-        char strkey[512];
-        const char *cookie_name = NULL,
-                   *cookie_value = NULL;
-
-        sprintf(strkey, "cookie_%d_name", i);
-        readconfig_value(&cfg, &strkey[0], &cookie_name);
-
-        char *cur_nam = strstr(cookie_name, "$");
-        while (cur_nam != NULL)
-        {
-          char *cur_var_name = extract_str(cur_nam, '{', '}');
-          char *cur_var_value = getenv(cur_var_name);
-          char *cur_var_fname = (char *) malloc(strlen(cur_var_name)+4);
-          sprintf(cur_var_fname, "${%s}", cur_var_name);
-          free(cur_var_name);
-
-          char *new_cookie_name = replace_str(cookie_name, cur_var_fname, cur_var_value);
-          free((void*)cookie_name);
-          cookie_name = new_cookie_name;
-          if (cur_var_fname != NULL) free(cur_var_fname);
-
-          cur_nam = strstr(cookie_name, "$");
-        }
-
-        sprintf(strkey, "cookie_%d_value", i);
-        readconfig_value(&cfg, &strkey[0], &cookie_value);
-
-        char *cur_var = strstr(cookie_value, "$");
-        while (cur_var != NULL)
-        {
-          char *cur_var_name = extract_str(cur_var, '{', '}');
-          char *cur_var_value = getenv(cur_var_name);
-          char *cur_var_fname = (char *) malloc(strlen(cur_var_name)+4);
-          sprintf(cur_var_fname, "${%s}", cur_var_name);
-          free(cur_var_name);
-
-          char *new_cookie_value = replace_str(cookie_value, cur_var_fname, cur_var_value);
-          free((void*)cookie_value);
-          cookie_value = new_cookie_value;
-          if (cur_var_fname != NULL) free(cur_var_fname);
-
-          cur_var = strstr(cookie_value, "$");
-        }
-
-        struct curl_slist *curcookie = (struct curl_slist *) malloc(sizeof(struct curl_slist));
-        curcookie->data = (char *) malloc(strlen(cookie_name)+strlen(cookie_value)+2);
-        sprintf(curcookie->data, "%s=%s", cookie_name, cookie_value);
-        curcookie->next = get_cookies();
-        set_cookies(curcookie);
-
-        #ifdef DEBUG
-        fprintf(stderr, "Read new cookie: [%s] => %s\n", cookie_name, cookie_value);
-        #endif
-
-        free((void*)cookie_name);
-        free((void*)cookie_value);
+        if(-1 == match.rm_so)
+          break;
+	strncat(tmpBuf, tmpVal, match.rm_so);
+	char            *pEnd = &tmpVal[match.rm_eo-1],
+			tVal = *pEnd;
+	*pEnd = '\0';
+	const char	*envVal = getenv(tmpVal + match.rm_so + 2);
+	*pEnd = tVal;
+        tmpVal += match.rm_eo;
+	if(envVal) strcat(tmpBuf, envVal);
       }
+      free(cookie_name);
+      cookie_name = strdup(tmpBuf);
+      if(!cookie_name)
+        goto on_gen_err;
+      /* do the same for cookie_value */
+      tmpVal = cookie_value;
+      tmpBuf[0] = '\0';
+      while(!regexec(&envVar, tmpVal, 1, &match, 0))
+      {
+        if(-1 == match.rm_so)
+          break;
+	strncat(tmpBuf, tmpVal, match.rm_so);
+	char            *pEnd = &tmpVal[match.rm_eo-1],
+			tVal = *pEnd;
+	*pEnd = '\0';
+	const char	*envVal = getenv(tmpVal + match.rm_so + 2);
+	*pEnd = tVal;
+        tmpVal += match.rm_eo;
+	if(envVal) strcat(tmpBuf, envVal);
+      }
+      free(cookie_value);
+      cookie_value = strdup(tmpBuf);
+      if(!cookie_value)
+        goto on_gen_err;
+      /* add to cookies */
+      struct curl_slist	*curcookie = (struct curl_slist *) malloc(sizeof(struct curl_slist));
+      if(!curcookie)
+        goto on_gen_err;
+      curcookie->data = (char *) malloc(strlen(cookie_name)+strlen(cookie_value)+2);
+      if(!curcookie->data)
+      {
+        free(curcookie);
+        goto on_gen_err;
+      }
+      sprintf(curcookie->data, "%s=%s", cookie_name, cookie_value);
+      curcookie->next = get_cookies();
+      set_cookies(curcookie);
+
+      #ifdef DEBUG
+      fprintf(stderr, "Read new cookie: [%s] => %s\n", cookie_name, cookie_value);
+      #endif
+
+on_gen_err:
+      if(cookie_value) free(cookie_value);
+      if(cookie_name) free(cookie_name);
     }
+    regfree(&envVar);
   }
 
 end_config:
-  config_destroy(&cfg); 
+  config_destroy(&cfg);
+  if(val) free((void*)val); 
 }
 
 size_t bodycallback(char *ptr, size_t size, size_t nmemb, void *userdata)
@@ -233,6 +255,7 @@ enum nss_status _nss_shib_getpwnam_r(const char *name, struct passwd *result, ch
     strcpy(cur_row, cursor->row);
     int count_separator = count_char_in_str(cur_row, ':');
     char **array = split_str(cur_row, ":");
+
     if (array[0] != NULL && count_separator >= 6)
     {
       if (strcmp(array[0], name) == 0)
@@ -273,6 +296,7 @@ enum nss_status _nss_shib_getpwuid_r(uid_t uid, struct passwd *result, char *buf
 {
   #ifdef DEBUG
   fprintf(stderr, "\nEntering _nss_shib_getpwuid_r with uid=%d.\n", uid);
+  fprintf(stderr, "\nbuflen=%ld.\n", buflen);
   #endif
 
   readconfig();
@@ -288,35 +312,51 @@ enum nss_status _nss_shib_getpwuid_r(uid_t uid, struct passwd *result, char *buf
     strcpy(cur_row, cursor->row);
     int count_separator = count_char_in_str(cur_row, ':');
     char **array = split_str(cur_row, ":");
+
+    size_t len = strlen(array[0]) + strlen(array[1]) + strlen(array[4]) + strlen(array[5]) + strlen(array[6]);
+    if (len > buflen)
+    {
+      *errnop = ERANGE;
+      return NSS_STATUS_TRYAGAIN;
+    }
+
     if (array[0] != NULL && count_separator >= 6)
     {
       if (atoi(array[2]) == uid)
       {
-        result->pw_name = (char *)malloc(strlen(array[0])+1);
-        strcpy(result->pw_name, array[0]);
-        result->pw_passwd = (char *)malloc(strlen(array[1])+1);
-        strcpy(result->pw_passwd, array[1]);
+        char *buf_ptr = buffer;
+        memcpy(buf_ptr, array[0], strlen(array[0])+1);
+        result->pw_name = buf_ptr;
+	buf_ptr += strlen(array[0])+1;
+        memcpy(buf_ptr, array[1], strlen(array[1])+1);
+        result->pw_passwd = buf_ptr;
+	buf_ptr += strlen(array[1])+1;
+        memcpy(buf_ptr, array[2], strlen(array[2])+1);
+        result->pw_gecos = buf_ptr;
+	buf_ptr += strlen(array[2])+1;
+        memcpy(buf_ptr, array[3], strlen(array[3])+1);
+        result->pw_dir = buf_ptr;
+	buf_ptr += strlen(array[3])+1;
+        memcpy(buf_ptr, array[4], strlen(array[4])+1);
+        result->pw_shell = buf_ptr;
+	buf_ptr += strlen(array[4])+1;
+
         result->pw_uid = atoi(array[2]);
         result->pw_gid = atoi(array[3]);
-        result->pw_gecos = (char *)malloc(strlen(array[4])+1);
-        strcpy(result->pw_gecos, array[4]);
-        result->pw_dir = (char *)malloc(strlen(array[5])+1);
-        strcpy(result->pw_dir, array[5]);
-        result->pw_shell = (char *)malloc(strlen(array[6])+1);
-        strcpy(result->pw_shell, array[6]);
 
         #ifdef DEBUG
         fprintf(stderr, "Found item for uid=%d: [name=%s, gid=%d]\n", uid, array[0], atoi(array[3]));
         #endif
 
-        free(array);
+        if(cur_row) free(cur_row);
+        if(array) free(array);
         cleanbody();
         return NSS_STATUS_SUCCESS;
       }
     }
 
-    free(array);
-    free(cur_row);
+    if(array) free(array);
+    if(cur_row) free(cur_row);
     cursor = cursor->next;
   }
 
@@ -564,26 +604,32 @@ enum nss_status _nss_shib_getgrgid_r(gid_t gid, struct group *result, char *buff
     char **array = split_str(cur_row, ":");
     if (array[0] != NULL  && count_separator >= 3 && atoi(array[2]) == gid)
     {
-      result->gr_name = (char *) malloc(strlen(array[0])+1);
-      strcpy(result->gr_name, array[0]);
-      result->gr_passwd = (char *) malloc(strlen(array[1])+1);
-      strcpy(result->gr_passwd, array[1]);
-      result->gr_gid = atoi(array[2]);
-      result->gr_mem = (char **) malloc(sizeof(char **));
+      char *buf_ptr = buffer;
+      memcpy(buf_ptr, array[0], strlen(array[0])+1);
+      result->gr_name = buf_ptr;
+      buf_ptr += strlen(array[0])+1;
+      memcpy(buf_ptr, array[1], strlen(array[1])+1);
+      result->gr_passwd = buf_ptr;
+      buf_ptr += strlen(array[1])+1;
 
+      result->gr_gid = atoi(array[2]);
+
+      char *ptr[128];
       int j = 0;
       char **members = split_str(array[3], ",");
-      for (j = 0; ;j++)
+      for (j = 0; ; j++)
       {
-        result->gr_mem = (char **) realloc(result->gr_mem, (j+1)*sizeof(char *));
         if (members == NULL || members[j] == NULL)
         {
-          result->gr_mem[j] = NULL;
+          ptr[j] = NULL;
           break;
         }
-        result->gr_mem[j] = malloc(strlen(members[j])+1);
-        strcpy(result->gr_mem[j], members[j]);
+        memcpy(buf_ptr, members[j], strlen(members[j])+1);
+        buf_ptr += strlen(members[j])+1;
       }
+
+      memcpy(buf_ptr, ptr, sizeof(char *)*j);
+      result->gr_mem = (char **)buf_ptr;
 
       #ifdef DEBUG
       fprintf(stderr, "Found item for gid=%d: [name=%s]\n", gid, array[0]);
