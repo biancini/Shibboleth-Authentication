@@ -94,10 +94,10 @@ static void readconfig()
 	if (!config_read_file(&cfg, config_file))  
 	{
 		char *message = "Config file not found in /etc/libnss.conf.\n";
-		syslog(LOG_ERR, message);
+		syslog(LOG_ERR, "%s", message);
 
 #ifdef DEBUG
-		fprintf(stderr, message);
+		fprintf(stderr, "%s", message);
 		fprintf(stderr, "%s\n", config_error_text(&cfg));
 #endif
 

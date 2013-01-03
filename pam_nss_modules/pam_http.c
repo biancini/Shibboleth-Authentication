@@ -13,8 +13,7 @@
 
 #include "netcurl.h"
 
-typedef struct _SESSION
-{
+typedef struct _SESSION {
 	char *key;
 	char *value;
 	struct _SESSION *next;
@@ -22,13 +21,10 @@ typedef struct _SESSION
 
 SESSION *session = NULL;
 
-static char *getsessvalue(const char *key)
-{
+static char *getsessvalue(const char *key) {
 	SESSION *cursor = session;
-	while (cursor)
-	{
-		if (!strcasecmp(cursor->key, key))
-		{
+	while (cursor) {
+		if (!strcasecmp(cursor->key, key)) {
 			return cursor->value;
 		}
 		cursor = cursor->next;
@@ -37,23 +33,19 @@ static char *getsessvalue(const char *key)
 	return NULL;
 }
 
-void cleanbody()
-{
-	while(session)
-	{
+void cleanbody() {
+	while (session) {
 		SESSION *next = session->next;
 		free(session);
 		session = next;
 	}
 }
 
-size_t bodycallback(char *ptr, size_t size, size_t nmemb, void *userdata)
-{
+size_t bodycallback(char *ptr, size_t size, size_t nmemb, void *userdata) {
 	size_t ret = size*nmemb;
 	char* pstr = (char *)malloc(size*nmemb+1);
 
-	if(!pstr)
-		return 0;
+	if(!pstr) return 0;
 	strncpy(pstr, ptr, size*nmemb);
 	pstr[size*nmemb] = '\0';
 
@@ -62,18 +54,15 @@ size_t bodycallback(char *ptr, size_t size, size_t nmemb, void *userdata)
 
 	/* impossible, for this to happen curl should
 	   invoke this function with ptr == NULL */  
-	if (rows == NULL || rows[0] == NULL)
-	{
+	if (rows == NULL || rows[0] == NULL) {
 		ret = 0;
 		goto on_err;
 	}
 
-	for (i = 0; rows[i]; i++)
-	{
+	for (i = 0; rows[i]; i++) {
 		char *peq = NULL;
 		replace_char(rows[i], '\r', '\0');
-		if (NULL != (peq = strchr(rows[i], '=')))
-		{
+		if (NULL != (peq = strchr(rows[i], '='))) {
 			char *key = rows[i],
 			     *value = peq + 1;
 			*peq = '\0';
@@ -101,23 +90,19 @@ on_err:
 
 /* pam arguments are normally of the form name=value.  This gets the
  * 'value' corresponding to the passed 'name' from the argument list. */
-static const char *getarg(const char *name, int argc, const char **argv)
-{
+static const char *getarg(const char *name, int argc, const char **argv) {
 	int len = strlen(name);
-	while (argc)
-	{
-		if (strlen(*argv) > len && !strncmp(name, *argv, len) && (*argv)[len] == '=')
-		{
+	while (argc) {
+		if (strlen(*argv) > len && !strncmp(name, *argv, len) && (*argv)[len] == '=') {
 			return *argv + len + 1;  /* 1 for the = */
 		}
 		argc--;
 		argv++;
 	}
-	return 0;
+	return NULL;
 }
 
-const char *get_password(pam_handle_t *pamh, const char *username, int flags, int use_first_pass, int try_first_pass)
-{
+const char *get_password(pam_handle_t *pamh, const char *username, int flags, int use_first_pass, int try_first_pass) {
 	int rc = 0;
 	char *password = NULL;
 	struct pam_message msg;
@@ -127,38 +112,38 @@ const char *get_password(pam_handle_t *pamh, const char *username, int flags, in
 	char message[128];
 
 	rc = pam_get_item(pamh, PAM_AUTHTOK, (const void **) &password);
-	if (rc == PAM_SUCCESS && (use_first_pass || try_first_pass)) return strdup(password);
+	if (rc == PAM_SUCCESS && (use_first_pass || try_first_pass)) return password;
 
-	if ((flags & PAM_SILENT) == PAM_SILENT)
-	{
+	if ((flags & PAM_SILENT) == PAM_SILENT) {
 		syslog(LOG_ERR, "PAM_SILENT enabled but password requested, unable to continue.\n");
 		return NULL;
 	}
 
-	if (pam_get_item(pamh, PAM_CONV, (const void**)&item) != PAM_SUCCESS)
-	{
+	if (pam_get_item(pamh, PAM_CONV, (const void**)&item) != PAM_SUCCESS) {
 		syslog(LOG_ERR, "Couldn't get pam_conv.\n");
 		return NULL;
 	}
 
 	msgp = &msg;
-
 	snprintf(message, 128, "%s's password: ", username);
 
 	msg.msg_style = PAM_PROMPT_ECHO_OFF;
 	msg.msg = message;
 
-	if(item->conv(1, &msgp, &respp, item->appdata_ptr))
-		return NULL;
+	if (item->conv(1, &msgp, &respp, item->appdata_ptr)) {
+		password = NULL;
+	}
+	else {
+		password = respp[0].resp;
+	}
 
-	password = respp[0].resp;
-	free(respp);
+	if (msgp) free((void*)msgp);
+	if (respp) free(respp);
 
 	return password;
 }
 
-PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv)
-{
+PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv) {
 	const char *username = NULL;
 	const char *password = NULL;
 	const char *cafile = getarg("cafile", argc, argv);
@@ -170,42 +155,35 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
 	int i = 0;
 
 	if (!url) return PAM_AUTH_ERR;
-
-	for (i = 0; i < argc; i++)
-	{
-		if (!strcmp (argv[i], "use_first_pass"))
-			use_first_pass = 1;
-		else if (!strcmp (argv[i], "try_first_pass"))
-			try_first_pass = 1;
-	}
+	if (NULL != strstr(argv[i], "use_first_pass")) use_first_pass = 1;
+	if (NULL != strstr(argv[i], "try_first_pass")) try_first_pass = 1;
 
 #ifdef DEBUG
 	fprintf(stderr, "\nCalling auth function with cafile=%s and sslcheck=%s.\n", cafile, sslcheck);
+	if(sess_username) fprintf(stderr, "\ndelete this print %s.\n", sess_username);
 #endif
 
-	if (pam_get_user(pamh, &username, 0) != PAM_SUCCESS)
-	{
+	if (pam_get_user(pamh, &username, 0) != PAM_SUCCESS) {
 		syslog(LOG_ERR, "Couldn't get username.\n");
 		return PAM_AUTH_ERR;
 	}
 
 	password = get_password(pamh, username, flags, use_first_pass, try_first_pass);
-	if (password == NULL)
-	{
+	if (password == NULL) {
 		syslog(LOG_ERR, "Couldn't get password.\n");
 		return PAM_AUTH_ERR;
 	}
-
-	if (geturl(url, (char*)username, password, cafile, sslcheck))
-	{
+	/*
+	if (geturl(url, (char*)username, password, cafile, sslcheck)) {
 		rv = PAM_SUCCESS;
-
-		if (sess_username != NULL)
-		{
+		
+		if (sess_username != NULL) {
 			char *uname = getsessvalue(sess_username);
 			pam_set_item(pamh, PAM_USER, uname);
 		}
 	}
+	*/
+	geturl(url, (char *)username, password, cafile, sslcheck);
 
 	memset((void*)password, '\0', strlen(password));
 	free((void*)password);
@@ -213,22 +191,19 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
 	return rv;
 }
 
-PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv)
-{
+PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv) {
 #ifdef DEBUG
 	fprintf(stderr, "\nSetting values in user session.\n");
 #endif
 
 	char sess_value[1024];
 	SESSION *cursor = session;
-	while (cursor)
-	{
+	while (cursor) {
 		replace_char(cursor->key, '-', '_');
 		sprintf(sess_value, "%s=%s", cursor->key, cursor->value);
 		setenv(cursor->key, cursor->value, 1);
 
-		if (pam_putenv(pamh, sess_value) != PAM_SUCCESS)
-		{
+		if (pam_putenv(pamh, sess_value) != PAM_SUCCESS) {
 #ifdef DEBUG
 			fprintf(stderr, "Error setting environment variable in user session.\n");
 #endif
@@ -242,8 +217,7 @@ PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const cha
 	return PAM_SUCCESS;
 }
 
-PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc, const char **argv)
-{
+PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc, const char **argv) {
 	const char *key = "authenticated";
 	const char *value = "true";
 
@@ -256,8 +230,7 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc, const c
 	return PAM_AUTH_ERR;
 }
 
-PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, const char **argv)
-{
+PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, const char **argv) {
 #ifdef DEBUG
 	fprintf(stderr, "\nOpening PAM session.\n");
 #endif
@@ -265,29 +238,25 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, cons
 	return PAM_SUCCESS;
 }
 
-PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags, int argc, const char **argv)
-{
+PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags, int argc, const char **argv) {
 #ifdef DEBUG
-	fprintf(stderr, "\nClosing PAM session.\n");
+	if (flags != PAM_SILENT) fprintf(stderr, "\nClosing PAM session.\n");
 #endif
 
 	cleanbody();
 	return PAM_SUCCESS;
 }
 
-PAM_EXTERN int pam_sm_chauthtok(pam_handle_t *pamh, int flags, int argc, const char **argv)
-{
+PAM_EXTERN int pam_sm_chauthtok(pam_handle_t *pamh, int flags, int argc, const char **argv) {
 	const char *message = "Unable to set user credentials on Shibboleth. Please contacy the IdP administrator for this task.\n";
-	syslog(LOG_ERR, message);
+	syslog(LOG_ERR, "%s", message);
 
-	if ((flags & PAM_SILENT) != PAM_SILENT)
-	{
+	if ((flags & PAM_SILENT) != PAM_SILENT) {
 		struct pam_conv *item;
 		struct pam_message msg;
 		const struct pam_message *msgp;
 
-		if (pam_get_item(pamh, PAM_CONV, (const void**)&item) != PAM_SUCCESS)
-		{
+		if (pam_get_item(pamh, PAM_CONV, (const void**)&item) != PAM_SUCCESS) {
 			syslog(LOG_ERR, "Couldn't get pam_conv\n");
 			return PAM_AUTH_ERR;
 		}
@@ -313,5 +282,38 @@ struct pam_module _pam_http_modstruct = {
 	pam_sm_close_session,
 	pam_sm_chauthtok
 };
+
+#endif
+
+#ifdef DEBUG
+
+int main(int argc, char *argv[]) {
+	int ritorno = 1;
+
+	if (argc < 3) {
+		fprintf(stderr, "Call specifying username and passowrd.\nExample:\n   %s username password\n", argv[0]);
+		return ritorno;
+	}
+
+	const char *username = argv[1];
+	const char *password = argv[2];
+	const char *cafile = NULL;
+	const char *sslcheck = "false";
+	const char *sess_username = "uid";
+	const char *url = "https://cloud-mi-03.mib.infn.it/secure/pam.php";
+
+	fprintf(stdout, "\nCalling auth function with cafile=%s and sslcheck=%s.\n", cafile, sslcheck);
+
+	if (geturl(url, (char*)username, password, cafile, sslcheck)) {
+		if (sess_username != NULL) {
+			char *uname = getsessvalue(sess_username);
+			if (uname) fprintf(stdout, "Authenticated user %s.\n", uname);
+			else fprintf(stdout, "Authenticated user %s (not found sess_username=%s).\n", username, sess_username);
+			ritorno = 0;
+		}
+	}
+
+	return ritorno;
+}
 
 #endif
