@@ -13,7 +13,7 @@ int count_char_in_str(char *str, char find);
 char *replace_char(char *str, char orig, char rep);
 char *replace_str(const char *str,const char *orig,const char *rep);
 char *extract_str(char *str, const char start, const char end);
-char **split_str(char *str, const char *delimiters);
+char **split_str(char *str, const char delimiter);
 void cleanbody(void);
 size_t bodycallback(char *ptr, size_t size, size_t nmemb, void *userdata);
 int geturl(const char *url, const char *username, const char *password, const char *cafile, const char *sslcheck);

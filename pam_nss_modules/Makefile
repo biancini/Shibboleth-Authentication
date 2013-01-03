@@ -11,6 +11,7 @@ release: all
 debug: CFLAGS += -DDEBUG -g
 debug: all
 	$(CC) $(CFLAGS) -o pam_http_test pam_http.c netcurl.c -lcurl -lpam
+	$(CC) $(CFLAGS) -o nss_shib_test libnss_shib.c netcurl.c -lcurl -lconfig
 
 .PHONY: release debug all clean install
 
@@ -18,12 +19,11 @@ debug: all
 all: check_user pam_http.so libnss_shib.so.2
 
 clean:
-	$(RM) check_user pam_http.so *.o libnss_shib.so.2
+	$(RM) check_user pam_http.so *.o libnss_shib.so.2 pam_http_test nss_shib_test
 pam_http.so: pam_http.c netcurl.c
 	$(CC) $(CFLAGS) -fPIC -shared -Xlinker -x -o $@ pam_http.c netcurl.c -lcurl
 check_user: check_user.c soapC.c soapClient.c
-	#$(CC) $(CFLAGS) -o $@ check_user.c soapC.c soapClient.c -lpam -lpam_misc -lssl -lgsoapssl -lgsoapck
-	$(CC) $(CFLAGS) -o $@ check_user.c -lpam -lpam_misc -lssl
+	$(CC) $(CFLAGS) -o $@ check_user.c soapC.c soapClient.c -lpam -lpam_misc -lssl -lgsoapssl -lgsoapck
 libnss_shib.so.2: libnss_shib.c netcurl.c
 	$(CC) $(CFLAGS) -fPIC -shared -Wl,-soname,libnss_shib.so.2 -Xlinker -x -o $@ libnss_shib.c netcurl.c -lcurl -lconfig
 

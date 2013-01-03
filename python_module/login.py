@@ -8,7 +8,7 @@ from ZSI.client import Binding
 def call_webservice(cookies):
     global loggeduser, session
     print "Trying to call webservice using SSO with obtained credentials."
-    url = 'https://server.hostname/webservice.php'
+    url = 'https://cloud-mi-03.mib.infn.it/secure/webservice.php'
 
     client = Binding(url=url)
     for (key, value) in cookies.items():

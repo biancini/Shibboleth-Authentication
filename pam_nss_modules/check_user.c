@@ -10,17 +10,16 @@ check_user   account    required     /usr/lib/security/pam_http.so
 #include <stdio.h>
 #include <stdlib.h>
 
-//#define WITH_OPENSSL
-//#define WITH_COOKIES
-//#include "soapH.h"
-//#include "BackendBinding.nsmap"
+#define WITH_OPENSSL
+#define WITH_COOKIES
+#include "soapH.h"
+#include "BackendBinding.nsmap"
 
 static struct pam_conv conv = {
 	misc_conv,
 	NULL
 };
 
-/*
 void call_webservice(char *loggeduser, const char *shib_unique, const char *shib_id)
 {
 	char *endpoint = "https://server.hostname/webservice.php";
@@ -50,7 +49,6 @@ void call_webservice(char *loggeduser, const char *shib_unique, const char *shib
 	soap_end(soap);
 	soap_free(soap);
 }
-*/
 
 int main(int argc, char *argv[])
 {
@@ -97,7 +95,7 @@ int main(int argc, char *argv[])
 		if (call_ws == 1)
 		{
 			fprintf(stdout, "\nCall webservice with SSO credentials obtained via Shibboleth login:\n");
-//			call_webservice((char *)authenticated_user, cur_var_unique, cur_var_id);
+			call_webservice((char *)authenticated_user, cur_var_unique, cur_var_id);
 		}
 		else 
 		{

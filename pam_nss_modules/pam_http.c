@@ -50,7 +50,7 @@ size_t bodycallback(char *ptr, size_t size, size_t nmemb, void *userdata) {
 	pstr[size*nmemb] = '\0';
 
 	int i = 0;
-	char **rows = split_str(pstr, "\n");
+	char **rows = split_str(pstr, '\n');
 
 	/* impossible, for this to happen curl should
 	   invoke this function with ptr == NULL */  
@@ -137,9 +137,7 @@ const char *get_password(pam_handle_t *pamh, const char *username, int flags, in
 		password = respp[0].resp;
 	}
 
-	if (msgp) free((void*)msgp);
 	if (respp) free(respp);
-
 	return password;
 }
 
@@ -160,7 +158,6 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
 
 #ifdef DEBUG
 	fprintf(stderr, "\nCalling auth function with cafile=%s and sslcheck=%s.\n", cafile, sslcheck);
-	if(sess_username) fprintf(stderr, "\ndelete this print %s.\n", sess_username);
 #endif
 
 	if (pam_get_user(pamh, &username, 0) != PAM_SUCCESS) {
@@ -173,7 +170,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
 		syslog(LOG_ERR, "Couldn't get password.\n");
 		return PAM_AUTH_ERR;
 	}
-	/*
+	
 	if (geturl(url, (char*)username, password, cafile, sslcheck)) {
 		rv = PAM_SUCCESS;
 		
@@ -182,8 +179,6 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
 			pam_set_item(pamh, PAM_USER, uname);
 		}
 	}
-	*/
-	geturl(url, (char *)username, password, cafile, sslcheck);
 
 	memset((void*)password, '\0', strlen(password));
 	free((void*)password);

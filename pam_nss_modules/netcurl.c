@@ -99,23 +99,25 @@ char *extract_str(char *str, const char start, const char end) {
 	return newstr;
 }
 
-char **split_str(char *str, const char *delimiters) {
-	char **tokenArray = (char **) malloc(sizeof(char *));
+char **split_str(char *str, const char delimiter) {
+	int num_elems = count_char_in_str(str, delimiter);
+	if (num_elems == 0) num_elems = 1;
+	else num_elems += 2;
+
+	char **tokenArray = (char **) malloc(sizeof(char *) * num_elems);
 	int count = 1;
 	int i = 0;
 
 	tokenArray[0] = NULL;
 	if (str == NULL) return tokenArray;
-	tokenArray = (char **) realloc(tokenArray, 2*sizeof(char *));
 	tokenArray[0] = &str[0];
 	tokenArray[1] = NULL;
 
 	for (i = 0; str[i]; i++) {
-		if (str[i] == delimiters[0]) {
+		if (str[i] == delimiter) {
 			str[i] = '\0';
 
 			if (str[i+1]) {
-				tokenArray = (char **) realloc(tokenArray, (count+2)*sizeof(char *));
 				tokenArray[count] = &str[i+1];
 				tokenArray[count+1] = NULL;
 				count++;
@@ -172,7 +174,7 @@ on_err:
 	return nmemb * size;  
 }
 
-static long __geturl(const char *url, const char *userpass, const char *cafile, const char *sslcheck, char **url_new) {
+static long _geturl(const char *url, const char *userpass, const char *cafile, const char *sslcheck, char **url_new) {
 	CURLcode	hResult = 0;
 	CURL		*hCurl = curl_easy_init();
 	long 		http_code = 0;
@@ -248,13 +250,12 @@ static long __geturl(const char *url, const char *userpass, const char *cafile, 
 	curl_easy_getinfo(hCurl, CURLINFO_REDIRECT_URL, &redir_url);
 
 	if (url_new && CURLE_OK == curl_easy_getinfo(hCurl, CURLINFO_REDIRECT_URL, &redir_url) && redir_url) {
-		if (url_new) free(url_new);
+		if (*url_new) free(*url_new);
 		*url_new = strdup(redir_url);
 	}
 
 opt_err:
 	curl_easy_cleanup(hCurl);
-	curl_global_cleanup();
 	return http_code;
 }
 
@@ -264,13 +265,15 @@ int geturl(const char *url, const char *username, const char *password, const ch
 		*url_new = NULL;
 	long	http_code = 0;
 
+	curl_global_init(CURL_GLOBAL_ALL);
 	while (1) {
 		cleanbody();
-		http_code = __geturl(url_lcl, userpass, cafile, sslcheck, &url_new);
+		http_code = _geturl(url_lcl, userpass, cafile, sslcheck, &url_new);
 
 		if (userpass) {
 			memset(userpass, '\0', strlen(userpass));
 			free(userpass);
+			userpass = NULL;
 			if (http_code == 401) goto cleanup;
 		}
 
@@ -303,6 +306,7 @@ cleanup:
 	if(url_new) free(url_new);
 	free_cookies();
 	if (http_code != 200) cleanbody();
+	curl_global_cleanup();
 	return http_code == 200;
 }
 
