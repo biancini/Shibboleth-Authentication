@@ -1,7 +1,7 @@
 Source: shibauth
 Section: libs
 Priority: extra
-Maintainer: Andrea <andrea.biancini@gmail.com>
+Maintainer: Andrea Biancini <andrea.biancini@gmail.com>
 Build-Depends: debhelper (>= 8.0.0), libcurl3, libcurl3-nss, libcurl4-openssl-dev, libpam0g, libpam0g-dev, libnss3, libconfig8, libconfig8-dev
 Standards-Version: 3.9.2
 Homepage: https://github.com/biancini/Shibboleth-Authentication
