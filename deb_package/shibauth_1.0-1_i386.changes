@@ -1,0 +1,46 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Format: 1.8
+Date: Fri, 04 Jan 2013 17:00:23 +0100
+Source: shibauth
+Binary: shibauth
+Architecture: source i386
+Version: 1.0-1
+Distribution: unstable
+Urgency: low
+Maintainer: Andrea <andrea.biancini@gmail.com>
+Changed-By: Andrea Biancini <andrea.biancini@gmail.com>
+Description: 
+ shibauth   - PAM and NSS modules for authenticating with Shibboleth.
+Changes: 
+ shibauth (1.0-1) unstable; urgency=low
+ .
+   * Initial release
+Checksums-Sha1: 
+ 24dce484477dcd159bb5ffd066a0c70bfb8ab843 1527 shibauth_1.0-1.dsc
+ 2514f74a216612d47225a92abeb21dede24b8a21 23134 shibauth_1.0.orig.tar.gz
+ 49c41c475ebc7e0cfb5e575493a1e65700e4ac2e 10868 shibauth_1.0-1.debian.tar.gz
+ 7ffbfa743b0ecc48b6e7f95b33047e9b9bf7afd6 2140 shibauth_1.0-1_i386.deb
+Checksums-Sha256: 
+ 839d3c7c120eb5228aef1ca4610cbe014c94c75cd21e6e2d9b0055322f5418fd 1527 shibauth_1.0-1.dsc
+ a4cd882a623220335e8a4e83331e6e5829433c5582ce5ea5273c76f8c96fcc1c 23134 shibauth_1.0.orig.tar.gz
+ c6dc95c5627c3f4f871bad07a9e77cd543da1faa75462980e8125f4d7ea93700 10868 shibauth_1.0-1.debian.tar.gz
+ e69cd843399226efda78ec53edde4808bdd943122464514f3dd4c2a5601da903 2140 shibauth_1.0-1_i386.deb
+Files: 
+ 9df396ec738a93304cebd0baca2eabf1 1527 libs extra shibauth_1.0-1.dsc
+ 9c55ff64964c347dcb5da23de1fbe23f 23134 libs extra shibauth_1.0.orig.tar.gz
+ 4c7116aad6c7310a2397bed209f18eae 10868 libs extra shibauth_1.0-1.debian.tar.gz
+ 4b75cd404cb42bc50df2a272d61ad080 2140 libs extra shibauth_1.0-1_i386.deb
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJQ5wVtAAoJEI6k9eW84K799BkH/0U8K+fXCo/rSEkQNI3T9FsJ
+EPCOAklPqppA4VKsNItrGwyxX83AzoHZm+5QeBSzlGuA5ut0CPhmMtaANvuOkEzm
+BNISKAMLiSFv6EyNPIvXAQn6AV2K3YeZSxo2Ap8PCmMhqezF0NZN6Fu5ezVt9Pic
+BRahEuUQ2ho7GMD8GPK+sHeu8svxdaVPtch/bkLggjJe0+O/NnTnFeQIhybiw0AR
+VaKPdTBOR08eCIaZmtDkzbmKIJHT2XsiPpOUhDtzAyh0tEfyebtk49HTIlGRsATb
++3VAOthXw85qYMVNVR+48Jnj8Ahta5XNKiXbCGVxMHYZi8MBI57lSw/k0hRqBFU=
+=+AWE
+-----END PGP SIGNATURE-----

@@ -1,0 +1,22 @@
+Package: shibauth
+Version: 1.0-1
+Architecture: i386
+Maintainer: Andrea <andrea.biancini@gmail.com>
+Installed-Size: 26
+Section: libs
+Priority: extra
+Homepage: https://github.com/biancini/Shibboleth-Authentication
+Description: PAM and NSS modules for authenticating with Shibboleth.
+ Implementation of a PAM and a NSS module used to integrate Shibboleth between the
+ authentication mechanisms for a Linux workstation.
+ .
+ The PAM module permits to authenticate over HTTP Basic Authentication.
+ It uses libcurl to interact with the webserver and reads user session information
+ from the web pages served after authentication.
+ .
+ The NSS module permits to obtain user information from a web page behind basic
+ authentication. The page must expose two different contents depending on query string:
+ - if ?passwd is provided the page must supply a file with the same structure of
+   /etc/passwd and listing all users defined by the server
+ - if ?group is provided the page must supply a file with the same structure of
+   /etc/group and listing all user groups defined by the server

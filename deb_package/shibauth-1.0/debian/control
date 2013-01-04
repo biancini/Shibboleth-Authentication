@@ -1,0 +1,27 @@
+Source: shibauth
+Section: libs
+Priority: extra
+Maintainer: Andrea <andrea.biancini@gmail.com>
+Build-Depends: debhelper (>= 8.0.0), libcurl3, libcurl3-nss, libcurl4-openssl-dev, libpam0g, libpam0g-dev, libnss3, libconfig8, libconfig8-dev
+Standards-Version: 3.9.2
+Homepage: https://github.com/biancini/Shibboleth-Authentication
+Vcs-Git: git://github.com/biancini/Shibboleth-Authentica
+#Vcs-Browser: http://git.debian.org/?p=collab-maint/shibauth.git;a=summary
+
+Package: shibauth
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: PAM and NSS modules for authenticating with Shibboleth.
+ Implementation of a PAM and a NSS module used to integrate Shibboleth between the
+ authentication mechanisms for a Linux workstation.
+ .
+ The PAM module permits to authenticate over HTTP Basic Authentication.
+ It uses libcurl to interact with the webserver and reads user session information
+ from the web pages served after authentication.
+ .
+ The NSS module permits to obtain user information from a web page behind basic
+ authentication. The page must expose two different contents depending on query string:
+ - if ?passwd is provided the page must supply a file with the same structure of
+   /etc/passwd and listing all users defined by the server
+ - if ?group is provided the page must supply a file with the same structure of
+   /etc/group and listing all user groups defined by the server
