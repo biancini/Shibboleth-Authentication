@@ -285,9 +285,11 @@ static int setgroupfromarray(char **array, struct group *result, char *buffer, s
 			break;
 		}
 		memcpy(buf_ptr, members[j], strlen(members[j]) + 1);
+		ptr[j] = buf_ptr;
 		buf_ptr += strlen(members[j]) + 1;
 	}
 
+	ptr[num_members - 1] = NULL;
 	memcpy(buf_ptr, ptr, sizeof(char *) * num_members);
 	result->gr_mem = (char **)buf_ptr;
 	free(members);
