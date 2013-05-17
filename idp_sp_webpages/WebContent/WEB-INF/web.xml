@@ -5,7 +5,7 @@
     <!-- Servlet with LDAP configurations -->
     <servlet>
         <servlet-name>LdapConfig</servlet-name>
-        <servlet-class>it.infn.mib.shibboleth.idp.LdapConfigServlet</servlet-class>
+        <servlet-class>it.garr.shibboleth.idp.LdapConfigServlet</servlet-class>
         <load-on-startup>3</load-on-startup>
         <init-param>
              <param-name>ldapUrl</param-name>
