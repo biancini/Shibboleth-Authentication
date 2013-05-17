@@ -60,8 +60,8 @@ public class AmazonS3RetrieveServlet extends HttpServlet{
 	
 	/** {@inheritDoc} */
 	protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		String entityId = request.getHeader("SP_EntityId");
-		String sessionIndex = request.getHeader("SessionIndex");
+		//String entityId = request.getHeader("SP_EntityId");
+		//String sessionIndex = request.getHeader("SessionIndex");
 		String accessKey = S3AccessorMethods.decode64(request.getHeader("AccessKey"));
 		
 		try {

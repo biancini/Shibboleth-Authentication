@@ -1,0 +1,2 @@
+http\://garr.it/shibboleth/authn = it.garr.shibboleth.idp.config.profile.authn.AmazonS3NamespaceHandler:q
+:q

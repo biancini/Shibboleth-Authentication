@@ -82,7 +82,6 @@ public class S3AccessorMethods {
 		return userParameters.get("uid");
 	}
 	
-	@SuppressWarnings("unchecked")
 	public static String createStringToSign(HttpServletRequest httpRequest) {
 		String httpMethod = httpRequest.getMethod();
 		String currentUri = httpRequest.getRequestURI();
