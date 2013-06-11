@@ -180,8 +180,10 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, cons
 		}
 	}
 
-	memset((void*)password, '\0', strlen(password));
-	free((void*)password);
+	if (use_first_pass == 0 && try_first_pass == 0) {
+		memset((void*)password, '\0', strlen(password));
+		free((void*)password);
+	}
 
 	return rv;
 }
