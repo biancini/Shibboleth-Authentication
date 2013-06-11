@@ -78,6 +78,7 @@ public class NSSServlet extends HttpServlet {
 				String groupValues = "";
 				String gid = curResult.getAttributes().get("uid").get().toString(); 
 				groupValues += gid + ":x:";
+				groupValues += curResult.getAttributes().get("uidnumber").get().toString() + ":";
 				
 				mapUserValues.put(gid, groupValues);
 			}
