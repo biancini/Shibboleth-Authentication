@@ -222,7 +222,7 @@ static int setpasswdfromarray(char **array, struct passwd *result, char *buffer,
 	int i = 0;
 
 	for (i = 0; i <= 6; ++i) {
-		lens[i] = strlen(array[i]);
+		lens[i] = (array[i] == NULL) ? 0 : strlen(array[i]);
 	}
 
 	if (buflen < lens[0] + lens[1] + lens[4] + lens[5] + lens[6] + 5) {
@@ -255,10 +255,9 @@ static int setpasswdfromarray(char **array, struct passwd *result, char *buffer,
 static int setgroupfromarray(char **array, struct group *result, char *buffer, size_t buflen) {
 	size_t lens[4];
 	int i = 0;
-
-	int num_members = (strlen(array[3]) == 0) ? 1 : count_char_in_str(array[3], ',') + 2;
+	int num_members = (array[3] == NULL || strlen(array[3]) == 0) ? 1 : count_char_in_str(array[3], ',') + 2;
 	for (i = 0; i <= 3; ++i) {
-		lens[i] = strlen(array[i]);
+		lens[i] = (array[i] == NULL) ? 0 : strlen(array[i]);
 	}
 	
 	if (buflen < lens[0] + lens[1] + lens[3] + 3 + (sizeof(char *) * num_members)) {
@@ -582,6 +581,7 @@ enum nss_status _nss_shib_getgrnam_r(const char *name, struct group *result, cha
 	readconfig();
 	char newurl[1024];
 	sprintf(newurl, "%s?group", url);
+
 	if (!geturl(newurl, username, password, cafile, sslcheck) || body == NULL) {
 		ret = NSS_STATUS_UNAVAIL;
 		goto getgrnam_err;
@@ -595,6 +595,7 @@ enum nss_status _nss_shib_getgrnam_r(const char *name, struct group *result, cha
 		char **array = split_str(cur_row, ':');
 		if (array[0] != NULL && count_separator >= 3 && strcmp(array[0], name) == 0) {
 			int setting = setgroupfromarray(array, result, buffer, buflen);
+
 			if (setting != 0) {
 				if (setting == 1) {
 					if(array) free(array);

@@ -71,7 +71,9 @@ int geturl(const char *url, const char *username, const char *password, const ch
         char *pyscript = "/root/tests/prova.py",
              *funcname[] = {"geturl", "getrow"};
 
+	// Bugfixing for library which does not load automatically
 	dlopen("libpython2.7.so", RTLD_LAZY | RTLD_GLOBAL);
+
         Py_Initialize();
         pModule = PyImport_AddModule("__main__");
         char *buffer = loadfile(pyscript, &size);
@@ -81,21 +83,21 @@ int geturl(const char *url, const char *username, const char *password, const ch
                 pFunc = PyObject_GetAttrString(pModule, funcname[0]);
 
                 pArgs = PyTuple_New(3);
-                pValue = PyString_FromString(url);
-                PyTuple_SetItem(pArgs, 0, pValue);
-                pValue = PyString_FromString(username);
-                PyTuple_SetItem(pArgs, 1, pValue);
-                pValue = PyString_FromString(password);
-                PyTuple_SetItem(pArgs, 2, pValue);
+                PyTuple_SetItem(pArgs, 0, PyString_FromString(url));
+                PyTuple_SetItem(pArgs, 1, PyString_FromString(username));
+                PyTuple_SetItem(pArgs, 2, PyString_FromString(password));
 
                 pValue = PyObject_CallObject(pFunc, pArgs);
                 Py_DECREF(pArgs);
+		Py_DECREF(pFunc);
+
                 if (pValue != NULL && PyInt_AsLong(pValue) == 0) {
                         pFunc = PyObject_GetAttrString(pModule, funcname[1]);
 
                         char *retval = NULL;
                         do {
                                 pValue = PyObject_CallObject(pFunc, PyTuple_New(0));
+
                                 if (pValue != NULL) {
                                         retval = PyString_AsString(pValue);
                                         if (retval != NULL && strlen(retval) > 0) {
@@ -106,13 +108,18 @@ int geturl(const char *url, const char *username, const char *password, const ch
 						bodycallback(retval, sizeof(char), strlen(retval), NULL);
 					}
                                 }
+
+				Py_DECREF(pValue);
                         } while (pValue != NULL && retval != NULL && strlen(retval) > 0);
 
+			Py_DECREF(pArgs);
+			Py_DECREF(pFunc);
                         Py_DECREF(pValue);
                 }
                 else {
-                        Py_DECREF(pFunc);
-                        //Py_DECREF(pModule);
+			if (pArgs) Py_DECREF(pArgs);
+			if (pFunc) Py_DECREF(pFunc);
+                        Py_DECREF(pModule);
                         PyErr_Print();
                         return -1;
                 }
@@ -122,6 +129,8 @@ int geturl(const char *url, const char *username, const char *password, const ch
         }
 
         Py_Finalize();
+	if (pModule) Py_DECREF(pModule);
+	if (buffer) free(buffer);
 	return 1;
 }
 
