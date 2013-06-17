@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -16,7 +15,8 @@
 
 #include <curl/curl.h>
 #include <curl/easy.h>
-#include "netcurl.h"
+#include "stringlibs.h"
+#include "pam_browser.h"
 
 BODY *body = NULL;
 int last_rownum_pwd = -1;
@@ -163,14 +163,14 @@ static void readconfig() {
 			cookie_value = strdup(tmpBuf);
 			if(!cookie_value) goto on_gen_err;
 			/* add to cookies */
-			struct curl_slist *curcookie = (struct curl_slist *) malloc(sizeof(struct curl_slist));
+			BODY *curcookie = (BODY *) malloc(sizeof(BODY));
 			if(!curcookie) goto on_gen_err;
-			curcookie->data = (char *) malloc(strlen(cookie_name)+strlen(cookie_value)+2);
-			if(!curcookie->data) {
+			curcookie->row = (char *) malloc(strlen(cookie_name)+strlen(cookie_value)+2);
+			if(!curcookie->row) {
 				free(curcookie);
 				goto on_gen_err;
 			}
-			sprintf(curcookie->data, "%s=%s", cookie_name, cookie_value);
+			sprintf(curcookie->row, "%s=%s", cookie_name, cookie_value);
 			curcookie->next = get_cookies();
 			set_cookies(curcookie);
 
@@ -421,6 +421,7 @@ enum nss_status _nss_shib_getpwent_r(struct passwd *result, char *buffer, size_t
 	readconfig();
 	char newurl[1024];
 	sprintf(newurl, "%s?passwd", url);
+
 	if (!geturl(newurl, username, password, cafile, sslcheck) || body == NULL) {
 		ret = NSS_STATUS_UNAVAIL;
 		goto getpwent_err;
@@ -775,8 +776,8 @@ static int test_function(int function, const char *param) {
 		break;
 	}
 
-	if (code != NSS_STATUS_SUCCESS) {
-		printf("Error while calling function.\n");
+	if (code != NSS_STATUS_SUCCESS && code != NSS_STATUS_TRYAGAIN) {
+		printf("Error while calling function (result code = %d).\n", code);
 		ret = 0;
 	}
 	else {

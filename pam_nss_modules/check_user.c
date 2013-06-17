@@ -1,8 +1,8 @@
 /*
    You need to add the following (or equivalent) to the /etc/pam.conf file.
-# check authorization
-check_user   auth       required     /usr/lib/security/pam_http.so
-check_user   account    required     /usr/lib/security/pam_http.so
+   # check authorization
+   check_user   auth       required     /usr/lib/security/pam_http.so
+   check_user   account    required     /usr/lib/security/pam_http.so
 */
 
 #include <security/pam_appl.h>
@@ -10,45 +10,10 @@ check_user   account    required     /usr/lib/security/pam_http.so
 #include <stdio.h>
 #include <stdlib.h>
 
-#define WITH_OPENSSL
-#define WITH_COOKIES
-#include "soapH.h"
-#include "BackendBinding.nsmap"
-
 static struct pam_conv conv = {
 	misc_conv,
 	NULL
 };
-
-void call_webservice(char *loggeduser, const char *shib_unique, const char *shib_id)
-{
-	char *endpoint = "https://server.hostname/webservice.php";
-	struct soap *soap = soap_new();
-	if (soap_ssl_client_context(soap, SOAP_SSL_NO_AUTHENTICATION, NULL, NULL, NULL, NULL, NULL)) 
-	{ 
-		soap_print_fault(soap, stderr); 
-		exit(1); 
-	} 
-
-	char **salutation = (char **)malloc(sizeof(char *));
-
-	char *cookie_key = (char *) malloc(strlen(shib_unique)+14);
-	sprintf(cookie_key, "_shibsession_%s", shib_unique);
-
-	soap->cookies = soap_set_cookie(soap, cookie_key, shib_id, NULL, NULL);
-
-#ifdef DEBUG
-	fprintf(stderr, "Passing the following cookie to WS:\n");
-	fprintf(stderr, "[%s] => %s\n", soap->cookies->name, soap->cookies->value);
-#endif
-
-	if (soap_call_ns2__oncall(soap, endpoint, NULL, loggeduser, salutation) == SOAP_OK) fprintf(stdout, "The salutation from WS is %s\n", *salutation);
-	else soap_print_fault(soap, stderr);
-
-	soap_done(soap);
-	soap_end(soap);
-	soap_free(soap);
-}
 
 int main(int argc, char *argv[])
 {
@@ -56,15 +21,13 @@ int main(int argc, char *argv[])
 	int retval = 0;
 	const char *user = "nobody";
 	const void *authenticated_user = NULL;
-	int call_ws = 0;
 
 	if (argc == 2) user = argv[1];
 	if (argc == 3)
 	{
-		if (strcmp(argv[1], "-ws") == 0) call_ws = 1;
-		else if (strcmp(argv[1], "-env") != 0)
+		if (strcmp(argv[1], "-env") != 0)
 		{
-			fprintf(stderr, "Usage: check_user [-ws|-env] [username]\n");
+			fprintf(stderr, "Usage: check_user [-env] [username]\n");
 			exit(1);
 		}
 
@@ -72,10 +35,9 @@ int main(int argc, char *argv[])
 	}
 
 	if (argc > 3) {
-		fprintf(stderr, "Usage: check_user [-ws|-env] [username]\n");
+		fprintf(stderr, "Usage: check_user [-env] [username]\n");
 		exit(1);
 	}
-
 	retval = pam_start("check_user", user, &conv, &pamh);
 
 	if (retval == PAM_SUCCESS) retval = pam_authenticate(pamh, 0);
@@ -92,17 +54,9 @@ int main(int argc, char *argv[])
 		const char *cur_var_unique = pam_getenv(pamh, "Shib_Session_Unique");
 		const char *cur_var_id = pam_getenv(pamh, "Shib_Session_ID");
 
-		if (call_ws == 1)
-		{
-			fprintf(stdout, "\nCall webservice with SSO credentials obtained via Shibboleth login:\n");
-			call_webservice((char *)authenticated_user, cur_var_unique, cur_var_id);
-		}
-		else 
-		{
-			fprintf(stdout, "\nExecute these two directives to have the proper envirnoment variables initialized in your session:\n");
-			fprintf(stdout, "export Shib_Session_Unique=%s\n", cur_var_unique);
-			fprintf(stdout, "export Shib_Session_ID=%s\n", cur_var_id);
-		}
+		fprintf(stdout, "\nExecute these two directives to have the proper envirnoment variables initialized in your session:\n");
+		fprintf(stdout, "export Shib_Session_Unique=%s\n", cur_var_unique);
+		fprintf(stdout, "export Shib_Session_ID=%s\n", cur_var_id);
 	}
 	else fprintf(stdout, "Not Authenticated: %s.\n", pam_strerror(pamh, retval));
 

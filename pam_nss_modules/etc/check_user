@@ -7,7 +7,7 @@
 # modifications to others PAM configuration files.
 #
 
-auth     required       pam_http.so url=https://servername.com/pam.php sess_username=username
-account  required       pam_http.so
+auth     required       pam_python.so pam_shibboleth.py url=https://servername.com/pam.php sess_username=username
+account  required       pam_python.so pam_shibboleth.py
 password required       pam_permit.so
-session  required       pam_http.so
+session  required       pam_python.so pam_shibboleth.py
