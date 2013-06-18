@@ -1,0 +1,18 @@
+Name: Shibboleth authentication
+Default: no
+Priority: 256
+Auth-Type: Primary
+Auth:
+        [success=end default=ignore]    pam_python.so pam_shibboleth.py url=https://<%= sp_hostname %>/secure/pam.php sess_username=<%= sess_username %> sslcheck=<%= sslcheck ? "True" : "False" %> try_first_pass
+Auth-Initial:
+        [success=end default=ignore]    pam_python.so pam_shibboleth.py url=https://<%= sp_hostname %>/secure/pam.php sess_username=<%= sess_username %> sslcheck=<%= sslcheck ? "True" : "False" %>
+Account-Type: Primary
+Account:
+        [success=end new_authtok_reqd=done default=ignore]      pam_python.so pam_shibboleth.py url=https://<%= sp_hostname %>/secure/pam.php sess_username=<%= sess_username %> sslcheck=<%= sslcheck ? "True" : "False" %> try_first_pass
+Account-Initial:
+        [success=end new_authtok_reqd=done default=ignore]      pam_python.so pam_shibboleth.py url=https://<%= sp_hostname %>/secure/pam.php sess_username=<%= sess_username %> sslcheck=<%= sslcheck ? "True" : "False" %>
+Session-Type: Additional
+Session:
+        [success=end default=ignore]    pam_python.so url=https://<%= sp_hostname %>/secure/pam.php sess_username=<%= sess_username %> sslcheck=<%= sslcheck ? "True" : "False" %> try_first_pass
+Session-Initial:
+        [success=end default=ignore]    pam_python.so url=https://<%= sp_hostname %>/secure/pam.php sess_username=<%= sess_username %> sslcheck=<%= sslcheck ? "True" : "False" %>

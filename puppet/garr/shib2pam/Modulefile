@@ -1,0 +1,11 @@
+name 'garr-shib2sp'
+version '0.1'
+
+author 'GARR'
+license 'GPLv3'
+project_page ''
+source ''
+summary 'A Shibboleth2 puppet module that installs Shibboleth IdP on EL/Debian platforms'
+description ''
+dependency 'puppetlabs/apache', '>=0.5.0-rc1'
+dependency 'puppetlabs/stdlib', '>=3.2.0'
