@@ -1,0 +1,6 @@
+Name: Make home directory for user
+Default: yes
+Priority: 192
+Session-Type: Additional
+Session:
+	optional			pam_mkhomedir.so skel=/etc/skel/ umask=0022

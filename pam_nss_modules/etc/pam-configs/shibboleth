@@ -1,0 +1,18 @@
+Name: Shibboleth authentication
+Default: no
+Priority: 256
+Auth-Type: Primary
+Auth:
+	[success=end default=ignore]	pam_python.so pam_shibboleth.py url=https://sp-test1.mib.garr.it/secure/pam.php sess_username=uid sslcheck=false try_first_pass
+Auth-Initial:
+	[success=end default=ignore]	pam_python.so pam_shibboleth.py url=https://sp-test1.mib.garr.it/secure/pam.php sess_username=uid sslcheck=false
+Account-Type: Primary
+Account:
+	[success=end new_authtok_reqd=done default=ignore]	pam_python.so pam_shibboleth.py url=https://sp-test1.mib.garr.it/secure/pam.php sess_username=uid sslcheck=false try_first_pass
+Account-Initial:
+	[success=end new_authtok_reqd=done default=ignore]	pam_python.so pam_shibboleth.py url=https://sp-test1.mib.garr.it/secure/pam.php sess_username=uid sslcheck=false
+Session-Type: Additional
+Session:
+	[success=end default=ignore]	pam_python.so url=https://sp-test1.mib.garr.it/secure/pam.php sess_username=uid sslcheck=false try_first_pass
+Session-Initial:
+	[success=end default=ignore]	pam_python.so url=https://sp-test1.mib.garr.it/secure/pam.php sess_username=uid sslcheck=false
