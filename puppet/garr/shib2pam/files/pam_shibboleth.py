@@ -24,13 +24,29 @@ def geturl(params, username, password):
   br.select_form(nr=0)
   br.form['j_username'] = username
   br.form['j_password'] = password
-  br.submit()
+  r = br.submit()
+
+  html_content = r.read()
+  #print html_content
+
+  # If uApprove ToU, approve it
+  if '<title>Terms Of Use</title>' in html_content:
+    br.select_form(nr=0)
+    #br.form['accept'].selected = True
+    for i in range(0, len(br.find_control(type="checkbox").items)):
+      br.find_control(type="checkbox").items[i].selected =True
+    r = br.submit()
+    html_content = r.read()
+
+  # If uApprove attribute release, approve it
+  if '<title>Attribute Release</title>' in html_content:
+    br.select_form(nr=0)
+    r = br.submit()
 
   # Submit form to create user session
   br.select_form(nr=0)
   r = br.submit()
 
-  html_content = r.read()
   #print html_content
   session = {}
 
@@ -111,8 +127,9 @@ def pam_sm_chauthtok(pamh, flags, argv):
   return pamh.PAM_SYSTEM_ERR
 
 if __name__ == "__main__":
-    params = {'url': 'https://server/secure/pam.php',
+    global session
+    params = {'url': 'https://servername/secure/pam.php',
               'sslcheck': False,
               'sess_username': 'uid'};
-    geturl(params, 'user', 'passwordd')
-
+    geturl(params, 'user', 'password')
+    print "Session values: %s" % session

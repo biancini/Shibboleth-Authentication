@@ -24,25 +24,37 @@ def geturl(params, username, password):
   br.select_form(nr=0)
   br.form['j_username'] = username
   br.form['j_password'] = password
-  br.submit()
+  r = br.submit()
+
+  html_content = r.read()
+  #print html_content
+
+  # If uApprove ToU, approve it
+  if '<title>Terms Of Use</title>' in html_content:
+    br.select_form(nr=0)
+    #br.form['accept'].selected = True
+    for i in range(0, len(br.find_control(type="checkbox").items)):
+      br.find_control(type="checkbox").items[i].selected =True
+    r = br.submit()
+    html_content = r.read()
+
+  # If uApprove attribute release, approve it
+  if '<title>Attribute Release</title>' in html_content:
+    br.select_form(nr=0)
+    r = br.submit()
 
   # Submit form to create user session
   br.select_form(nr=0)
   r = br.submit()
 
-  html_content = r.read()
   #print html_content
   session = {}
 
-  if "authenticated=true\n" in html_content:
-    rows = html_content.split('\n')
-    for row in rows:
-      if '=' in row:
-        vals = row.split('=')
-        session[vals[0].replace('-', '_')] = vals[1]
-    return True
-  else:
-    return False
+  rows = html_content.split('\n')
+  for row in rows:
+    if '=' in row:
+      vals = row.split('=')
+      session[vals[0].replace('-', '_')] = vals[1]
 
 def parse_args(pamh, argv):
   use_first_pass = False
@@ -80,17 +92,18 @@ def send_msg(pamh, msg_style, msg):
     return rsp
 
 def pam_sm_authenticate(pamh, flags, argv):
-  outcome = False
+  global session
   try:
+    session = {}
     params = parse_args(pamh, argv)
     username = pamh.get_user(None)
     password = send_msg(pamh, pamh.PAM_PROMPT_ECHO_OFF, "%s's password:" % username)
-    outcome = geturl(params, username, password.resp)
+    geturl(params, username, password.resp)
   except pamh.exception, e:
     return e.pam_result
 
   if params['sess_username'] in session: pam.user = session[param['sess_username']]
-  if outcome:
+  if 'authenticated' in session and session['authenticated'] == 'true':
     return pamh.PAM_SUCCESS
   else:
     return pamh.PAM_AUTH_ERR
@@ -114,7 +127,9 @@ def pam_sm_chauthtok(pamh, flags, argv):
   return pamh.PAM_SYSTEM_ERR
 
 if __name__ == "__main__":
-    params = {'url': 'https://server/secure/pam.php',
+    global session
+    params = {'url': 'https://servername/secure/pam.php',
               'sslcheck': False,
               'sess_username': 'uid'};
-    geturl(params, 'user', 'passwordd')
+    geturl(params, 'user', 'password')
+    print "Session values: %s" % session
