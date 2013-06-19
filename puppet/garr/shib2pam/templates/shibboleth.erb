@@ -13,6 +13,6 @@ Account-Initial:
         [success=end new_authtok_reqd=done default=ignore]      pam_python.so pam_shibboleth.py url=https://<%= sp_hostname %>/secure/pam.php sess_username=<%= sess_username %> sslcheck=<%= sslcheck ? "True" : "False" %>
 Session-Type: Additional
 Session:
-        [success=end default=ignore]    pam_python.so url=https://<%= sp_hostname %>/secure/pam.php sess_username=<%= sess_username %> sslcheck=<%= sslcheck ? "True" : "False" %> try_first_pass
+        [success=end default=ignore]    pam_python.so pam_shibboleth.py url=https://<%= sp_hostname %>/secure/pam.php sess_username=<%= sess_username %> sslcheck=<%= sslcheck ? "True" : "False" %> try_first_pass
 Session-Initial:
-        [success=end default=ignore]    pam_python.so url=https://<%= sp_hostname %>/secure/pam.php sess_username=<%= sess_username %> sslcheck=<%= sslcheck ? "True" : "False" %>
+        [success=end default=ignore]    pam_python.so pam_shibboleth.py url=https://<%= sp_hostname %>/secure/pam.php sess_username=<%= sess_username %> sslcheck=<%= sslcheck ? "True" : "False" %>
