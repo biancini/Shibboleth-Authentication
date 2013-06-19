@@ -47,6 +47,7 @@ def geturl(params, username, password):
   br.select_form(nr=0)
   r = br.submit()
 
+  html_content = r.read()
   #print html_content
   session = {}
 
@@ -127,7 +128,6 @@ def pam_sm_chauthtok(pamh, flags, argv):
   return pamh.PAM_SYSTEM_ERR
 
 if __name__ == "__main__":
-    global session
     params = {'url': 'https://servername/secure/pam.php',
               'sslcheck': False,
               'sess_username': 'uid'};
