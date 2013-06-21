@@ -12,13 +12,13 @@
     "files/libnss_shib.so.2": "ccb3a98bb995fee5e516a684a2541a88",
     "files/mkhomedir": "6a960d458284ca8cf317cbbbf01b1266",
     "files/nss.php": "3ee99154207a59d6ca8f097431537cb1",
-    "files/pam_shibboleth.py": "69e896cfbddca1598ab641c5d52cfe1a",
+    "files/pam_shibboleth.py": "5aa00e2b767626d01d4204c68d4a5f7e",
     "manifests/classes/pam.pp": "243bb35ecf49b2f888b82eab62091999",
     "manifests/classes/prerequisites.pp": "445322dd0d6507be84512295efad3a18",
     "manifests/definitions/instance.pp": "50b0bc06271e871f9784eb32e0d09f03",
     "manifests/init.pp": "1ef6a7dc6bfbf031f46464c05dd82eeb",
     "templates/libnss.conf.erb": "83cdbe21de72ce80f5be489693d6d969",
-    "templates/shibboleth.erb": "347e40b5e388e4fb573c7dcfa29b28bc"
+    "templates/shibboleth.erb": "1dfad60d2f3bb32ae5907db96ded668e"
   },
   "dependencies": [
     {

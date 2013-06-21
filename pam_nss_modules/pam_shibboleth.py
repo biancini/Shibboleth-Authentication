@@ -103,7 +103,7 @@ def pam_sm_authenticate(pamh, flags, argv):
   except pamh.exception, e:
     return e.pam_result
 
-  if params['sess_username'] in session: pam.user = session[param['sess_username']]
+  if params['sess_username'] in session: pamh.user = session[params['sess_username']]
   if 'authenticated' in session and session['authenticated'] == 'true':
     return pamh.PAM_SUCCESS
   else:
