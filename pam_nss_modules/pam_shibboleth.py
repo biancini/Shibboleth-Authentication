@@ -4,12 +4,16 @@ def get_password(pamh, params):
   password = None
   if "use_first_pass" in params and params["use_first_pass"]:
     password = pamh.authtok
+    return password
+
   if "try_first_pass" in params and params["try_first_pass"]:
     password = pamh.authtok
-
+  
   if password is None:
     username = pamh.get_user(None)
-    res = send_msg(pamh, pamh.PAM_PROMPT_ECHO_OFF, "%s's password:" % username)
+    msg = pamh.user_prompt
+    if msg is None: msg = "%s's password:" % username
+    res = send_msg(pamh, pamh.PAM_PROMPT_ECHO_OFF, msg)
     password = res.resp
 
   return password
