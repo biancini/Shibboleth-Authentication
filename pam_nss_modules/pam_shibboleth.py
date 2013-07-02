@@ -1,5 +1,19 @@
 session = {}
 
+def get_password(pamh, params):
+  password = None
+  if "use_first_pass" in params and params["use_first_pass"]:
+    password = pamh.authtok
+  if "try_first_pass" in params and params["try_first_pass"]:
+    password = pamh.authtok
+
+  if password is None:
+    username = pamh.get_user(None)
+    res = send_msg(pamh, pamh.PAM_PROMPT_ECHO_OFF, "%s's password:" % username)
+    password = res.resp
+
+  return password
+
 def is_shibbolethds(html_content):
   return "wayf.css" in html_content
 
@@ -26,8 +40,7 @@ def is_shibboleth(html_content):
 
 def shibboleth(pamh, br, params):
   username = pamh.get_user(None)
-  res = send_msg(pamh, pamh.PAM_PROMPT_ECHO_OFF, "%s's password:" % username)
-  password = res.resp
+  password = get_password(pamh, params)
 
   # Submit first form with username and password provided
   br.select_form(nr=0)
@@ -63,8 +76,7 @@ def is_simplesaml(html_content):
 
 def simplesaml(pamh, br, params):
   username = pamh.get_user(None)
-  res = send_msg(pamh, pamh.PAM_PROMPT_ECHO_OFF, "%s's password:" % username)
-  password = res.resp
+  password = get_password(pamh, params)
 
   # Submit first form with username and password provided
   br.select_form(nr=0)
