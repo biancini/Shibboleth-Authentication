@@ -13,7 +13,7 @@ def shibbolethds(pamh, br, params):
     msg = "%s%d. %s\n" % (msg, num, c.name)
     listidps[num] = c.get_labels()[0].text
     num = num+1
-  msg ="%s\nInsert the number of the IdP to be used: " % msg
+  msg ="%sInsert the number of the IdP to be used: " % msg
 
   rsp = send_msg(pamh, pamh.PAM_PROMPT_ECHO_ON, msg)
   br.form['origin'] = [listidps[int(rsp.resp)]]
@@ -24,7 +24,11 @@ def shibbolethds(pamh, br, params):
 def is_shibboleth(html_content):
   return ('j_username' in html_content and 'j_password' in html_content)
 
-def shibboleth(pamh, br, params, username, password):
+def shibboleth(pamh, br, params):
+  username = pamh.get_user(None)
+  res = send_msg(pamh, pamh.PAM_PROMPT_ECHO_OFF, "%s's password:" % username)
+  password = res.resp
+
   # Submit first form with username and password provided
   br.select_form(nr=0)
   br.form['j_username'] = username
@@ -57,7 +61,11 @@ def shibboleth(pamh, br, params, username, password):
 def is_simplesaml(html_content):
   return ('id="username"' in html_content and 'id="password"' in html_content)
 
-def simplesaml(pamh, br, params, username, password):
+def simplesaml(pamh, br, params):
+  username = pamh.get_user(None)
+  res = send_msg(pamh, pamh.PAM_PROMPT_ECHO_OFF, "%s's password:" % username)
+  password = res.resp
+
   # Submit first form with username and password provided
   br.select_form(nr=0)
   br.form['username'] = username
@@ -74,7 +82,7 @@ def simplesaml(pamh, br, params, username, password):
   #print html_content
   return html_content
 
-def geturl(pamh, params, username, password):
+def geturl(pamh, params):
   import mechanize
   import cookielib
   import urllib
@@ -102,11 +110,11 @@ def geturl(pamh, params, username, password):
       html_content = shibbolethds(pamh, br, params)
     elif is_shibboleth(html_content):
       #print "It is a Shibboleth IdP page"
-      html_content = shibboleth(pamh, br, params, username, password)
+      html_content = shibboleth(pamh, br, params)
       continue_loop = False
     elif is_simplesaml(html_content):
       #print "It is a Simple SAML IdP page"
-      html_content = simplesaml(pamh, br, params, username, password)
+      html_content = simplesaml(pamh, br, params)
       continue_loop = False
     else:
       html_content = ""
@@ -161,9 +169,7 @@ def pam_sm_authenticate(pamh, flags, argv):
   try:
     session = {}
     params = parse_args(pamh, argv)
-    username = pamh.get_user(None)
-    password = send_msg(pamh, pamh.PAM_PROMPT_ECHO_OFF, "%s's password:" % username)
-    geturl(pamh, params, username, password.resp)
+    geturl(pamh, params)
   except pamh.exception, e:
     return e.pam_result
 
