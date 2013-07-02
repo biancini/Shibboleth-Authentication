@@ -10,8 +10,8 @@ def shibbolethds(pamh, br, params):
   msg = "Chose the IdP you want to use for login. Available IdPs are:\n"
   listidps = {}
   for c in br.form.find_control('origin').get_items():
-    msg = "%s%d. %s\n" % (msg, num, c.name)
-    listidps[num] = c.get_labels()[0].text
+    msg = "%s%d. %s\n" % (msg, num, ' - '.join([a.text for a in c.get_labels()]))
+    listidps[num] = c.name
     num = num+1
   msg ="%sInsert the number of the IdP to be used: " % msg
 
