@@ -6,7 +6,7 @@ web-based application.
 
 Inside this project the following modules are created:
 
-  * a PAM module to authenticate over HTTP Basich Auhentication
+  * a PAM module to authenticate over a SAML IdP (Shibboleth or Simple SAML)
   * a JAAS module to authenticate inside Java applications
   * a Python module to authenticate on python applications
   * an extension to IdP to implement a new LoginHandler managing S3 authentication
