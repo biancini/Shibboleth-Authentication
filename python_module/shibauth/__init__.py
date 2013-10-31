@@ -1,5 +1,7 @@
 from httpFunctions import http_methods
-import ConfigParser, os
+import ConfigParser
+import os
+import sys
 
 config = ConfigParser.ConfigParser()
 config.readfp(open('shibauth.config'))
@@ -11,17 +13,18 @@ debug = config.getboolean('HTTP params', 'debug')
 
 def login(username, password=None):
     http_methods.debug = debug
-    returned_page = http_methods.get_url(url, username, password, False)
+    params = {'url': url,
+              'sslcheck': sslcheck,
+              'username': username,
+              'password': password,
+              'sess_username': sess_username};
+    http_methods.geturl(params)
+    session = http_methods.getsession()
 
-    if (returned_page.get_return_code() == 200):
-        session = {}
-        for cur_row in returned_page.get_body_rows():
-            vals = cur_row.split("=")
-            if (len(vals) > 0 and vals[0]):
-                session[vals[0]] = (len(vals) > 1) and vals[1] or None
-        if not session["authenticated"].lower() == "true": raise Exception("Unable to log in user")
-        loggeduser = (sess_username) and session[sess_username] or username
-        return loggeduser, session
-    else:
-        raise Exception("Unable to log in user")
-
+    try:
+      if session['authenticated'].lower() != "true": raise Exception("Unable to log in user")
+      loggeduser = (sess_username) and session[sess_username] or username
+      return loggeduser, session
+    except Exception as e:
+      if debug: print >> sys.stderr, "Exception: %s" % e
+      raise Exception("Unable to log in user")

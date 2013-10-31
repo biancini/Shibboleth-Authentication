@@ -9,94 +9,140 @@ class http_methods():
     ssl_check = False
     cookies = cookielib.CookieJar()
 
-    @staticmethod    
-    def get_url(url_to_read, username, password, ssl_check):
-        returned_page = None
-        http_methods.ssl_check = ssl_check
-        
-        return_code = -1
-        cur_url = url_to_read
-        while (return_code != 200):
-            try:
-                returned_page = http_methods.get_single_url(cur_url)
-                cur_url = returned_page.get_header_field("location")
-                return_code = returned_page.get_return_code()
-            except urllib2.HTTPError, e:
-                if (e.code == 401):
-                    returned_page = http_methods.get_single_url(cur_url, username, password)
-                    cur_url = returned_page.get_header_field("location")
-                    return_code = returned_page.get_return_code()
-                else: return_code = -1
-
-        return returned_page
+    session = {}
+    @staticmethod
+    def is_shibbolethds(html_content):
+        return "wayf.css" in html_content
 
     @staticmethod
-    def get_single_url(url_to_read, username=None, password=None):
-        cookies_string = ';'.join([("%s=%s" % (cookie.name, cookie.value)) for cookie in http_methods.cookies])
+    def send_msg(msg):
+        return raw_input(msg)
 
-        if (http_methods.debug): print >> sys.stderr, 'Opening URL: ' + url_to_read
-        if (http_methods.debug): print >> sys.stderr, 'Passing the following cookies: ' + cookies_string
+    @staticmethod
+    def shibbolethds(br, params):
+        br.select_form(nr=0)
 
-        if username:
-            if (http_methods.debug): print >> sys.stderr, 'Basic authentication string: ' + username + ':' + password
-            password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
-            password_mgr.add_password(None, url_to_read, username, password)
-            opener = urllib2.build_opener(no_redirect_handler(), urllib2.HTTPCookieProcessor(http_methods.cookies), urllib2.HTTPBasicAuthHandler(password_mgr))
-        else:
-  	    opener = urllib2.build_opener(no_redirect_handler(), urllib2.HTTPCookieProcessor(http_methods.cookies))
+        num = 1
+        msg = "Chose the IdP you want to use for login. Available IdPs are:\n"
+        listidps = {}
+        for c in br.form.find_control('origin').get_items():
+            msg = "%s%d. %s\n" % (msg, num, ' - '.join([a.text for a in c.get_labels()]))
+            listidps[num] = c.name
+            num = num+1
+        msg ="%sInsert the number of the IdP to be used: " % msg
 
-        req = urllib2.Request(url_to_read)
-        resp = opener.open(req)
+        rsp = send_msg(msg)
+        br.form['origin'] = [listidps[int(rsp.resp)]]
+        r = br.submit()
+        html_content = r.read()
+        return html_content
 
-        returned_page = http_page()
-        returned_page.set_return_code(resp.code)
+    @staticmethod
+    def is_shibboleth(html_content):
+        return ('j_username' in html_content and 'j_password' in html_content)
 
-        for (header_key, header_value) in resp.info().items():
-            returned_page.add_header_field(header_key, header_value)
+    @staticmethod
+    def shibboleth(br, params):
+        # Submit first form with username and password provided
+        br.select_form(nr=0)
+        br.form['j_username'] = params['username']
+        br.form['j_password'] = params['password']
+        r = br.submit()
 
-	if (http_methods.debug): print >> sys.stderr, 'Response code: ' + str(returned_page.get_return_code())
+        html_content = r.read()
+        if (http_methods.debug): print >> sys.stderr, html_content
 
-        if (returned_page.get_return_code() == 200):
-           for line in resp.read().split('\n'):
-               returned_page.add_body_row(line)
-		
-	return returned_page;
+        # If uApprove ToU, approve it
+        if '<title>Terms Of Use</title>' in html_content:
+          br.select_form(nr=0)
+          #br.form['accept'].selected = True
+          for i in range(0, len(br.find_control(type="checkbox").items)):
+             br.find_control(type="checkbox").items[i].selected =True
+             r = br.submit()
+             html_content = r.read()
 
-class no_redirect_handler(urllib2.HTTPRedirectHandler):
-    def http_error_302(self, req, fp, code, msg, headers):
-        infourl = urllib.addinfourl(fp, headers, req.get_full_url())
-        infourl.status = code
-        infourl.code = code
-        return infourl
+        # If uApprove attribute release, approve it
+        if '<title>Attribute Release</title>' in html_content:
+            br.select_form(nr=0)
+            r = br.submit()
 
-    http_error_300 = http_error_302
-    http_error_301 = http_error_302
-    http_error_303 = http_error_302
-    http_error_307 = http_error_302
+        # Submit form to create user session
+        br.select_form(nr=0)
+        r = br.submit()
+        html_content = r.read()
+        return html_content
 
-class http_page():
-    return_code = -1
-    header_fields = {}
-    body_rows = []
+    @staticmethod
+    def is_simplesaml(html_content):
+        return ('id="username"' in html_content and 'id="password"' in html_content)
 
-    def get_return_code(self):
-        return self.return_code
+    @staticmethod
+    def simplesaml(br, params):
+        # Submit first form with username and password provided
+        br.select_form(nr=0)
+        br.form['username'] = params['username']
+        br.form['password'] = params['password']
+        r = br.submit()
 
-    def set_return_code(self, return_code):
-        self.return_code = return_code
+        html_content = r.read()
 
-    def get_header_field(self, field_name):
-        if (field_name in self.header_fields.keys()):
-            return self.header_fields[field_name]
+        # Submit form to create user session
+        br.select_form(nr=0)
+        r = br.submit()
+        html_content = r.read()
 
-        return None
+        if (http_methods.debug): print >> sys.stderr, html_content
+        return html_content
 
-    def add_header_field(self, field_name, field_values):
-        self.header_fields[field_name] = field_values
+    @staticmethod
+    def geturl(params):
+        import mechanize
+        import cookielib
+        import urllib
+        global session
 
-    def add_body_row(self, body_row):
-        self.body_rows.append(body_row)
+        br = mechanize.Browser()
+        cj = cookielib.LWPCookieJar()
+        br.set_cookiejar(cj)
+        br.set_handle_equiv(True)
+        br.set_handle_gzip(False)
+        br.set_handle_redirect(True)
+        br.set_handle_referer(True)
+        br.set_handle_robots(False)
+        br.set_handle_refresh(mechanize._http.HTTPRefreshProcessor(), max_time=1)
+        br.addheaders = [('User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1')]
 
-    def get_body_rows(self):
-        return self.body_rows
+        # Get first url and get redirected to IdP login page
+        if (http_methods.debug): print >> sys.stderr, "Trying to access url: %s" % params['url']
+        r = br.open(params['url'])
+        html_content = r.read()
 
+        continue_loop = True
+        while continue_loop:
+            if http_methods.is_shibbolethds(html_content):
+                if (http_methods.debug): print >> sys.stderr, "It is a Shibboleth DS page"
+                html_content = http_methods.shibbolethds(br, params)
+            elif http_methods.is_shibboleth(html_content):
+                if (http_methods.debug): print >> sys.stderr, "It is a Shibboleth IdP page"
+                html_content = http_methods.shibboleth(br, params)
+                continue_loop = False
+            elif http_methods.is_simplesaml(html_content):
+                if (http_methods.debug): print >> sys.stderr, "It is a Simple SAML IdP page"
+                html_content = http_methods.simplesaml(br, params)
+                continue_loop = False
+            else:
+                html_content = ""
+                continue_loop = False
+
+        if (http_methods.debug): print >> sys.stderr, html_content
+        session = {}
+
+        rows = html_content.split('\n')
+        for row in rows:
+            if '=' in row:
+                vals = row.split('=')
+                session[vals[0].replace('-', '_')] = vals[1]
+
+    @staticmethod
+    def getsession():
+        return session

@@ -35,8 +35,8 @@ def sso():
     loggeduser = os.environ[sess_username]
     
     session = {}
-    session["Shib-Session-Unique"] = os.environ[shib_unique]
-    session["Shib-Session-ID"] = os.environ[shib_id]
+    session["Shib_Session_Unique"] = os.environ[shib_unique]
+    session["Shib_Session_ID"] = os.environ[shib_id]
 
     return loggeduser, session
 
@@ -60,7 +60,7 @@ if __name__ == "__main__":
             print "Session value: [%s] => %s" % (key, val)
 
         cookies = {}
-        cookies["_shibsession_%s" % session["Shib-Session-Unique"]] = session["Shib-Session-ID"]
+        cookies["_shibsession_%s" % session["Shib_Session_Unique"]] = session["Shib_Session_ID"]
         call_webservice(cookies)
     except Exception, e:
         print "Error logging in user: %s" % e
