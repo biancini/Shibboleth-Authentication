@@ -24,7 +24,8 @@ int last_rownum_grp = -1;
 
 static const char *config_file = "/etc/libnss.conf";
 
-const char *url = NULL;
+const char *url_passwd = NULL;
+const char *url_group = NULL;
 const char *cafile = NULL;
 const char *sslcheck = NULL;
 const char *username = NULL;
@@ -97,7 +98,8 @@ static void readconfig() {
 		return;
 	}
 
-	readconfig_value(&cfg, "url", &url);
+	readconfig_value(&cfg, "url_passwd", &url_passwd);
+	readconfig_value(&cfg, "url_group", &url_group);
 	readconfig_value(&cfg, "cafile", &cafile);
 	readconfig_value(&cfg, "sslcheck", &sslcheck);
 	readconfig_value(&cfg, "username", &username);
@@ -305,7 +307,7 @@ enum nss_status _nss_shib_getpwnam_r(const char *name, struct passwd *result, ch
 
 	readconfig();
 	char newurl[1024];
-	sprintf(newurl, "%s?passwd", url);
+	sprintf(newurl, "%s", url_passwd);
 	if (!geturl(newurl, username, password, cafile, sslcheck) || body == NULL) {
 		ret = NSS_STATUS_UNAVAIL;
 		goto getpwnam_err;
@@ -356,7 +358,7 @@ enum nss_status _nss_shib_getpwuid_r(uid_t uid, struct passwd *result, char *buf
 
 	readconfig();
 	char newurl[1024];
-	sprintf(newurl, "%s?passwd", url);
+	sprintf(newurl, "%s", url_passwd);
 	if (!geturl(newurl, username, password, cafile, sslcheck) || body == NULL) {
 		ret = NSS_STATUS_UNAVAIL;
 		goto getpwuid_err;
@@ -419,7 +421,7 @@ enum nss_status _nss_shib_getpwent_r(struct passwd *result, char *buffer, size_t
 
 	readconfig();
 	char newurl[1024];
-	sprintf(newurl, "%s?passwd", url);
+	sprintf(newurl, "%s", url_passwd);
 
 	if (!geturl(newurl, username, password, cafile, sslcheck) || body == NULL) {
 		ret = NSS_STATUS_UNAVAIL;
@@ -508,7 +510,7 @@ enum nss_status _nss_shib_getgrent_r(struct group *result, char *buffer, size_t 
 	enum nss_status ret = NSS_STATUS_UNAVAIL;
 	readconfig();
 	char newurl[1024];
-	sprintf(newurl, "%s?group", url);
+	sprintf(newurl, "%s", url_group);
 
 	if (!geturl(newurl, username, password, cafile, sslcheck) || body == NULL) {
 		ret = NSS_STATUS_UNAVAIL;
@@ -580,7 +582,7 @@ enum nss_status _nss_shib_getgrnam_r(const char *name, struct group *result, cha
 	enum nss_status ret = NSS_STATUS_UNAVAIL;
 	readconfig();
 	char newurl[1024];
-	sprintf(newurl, "%s?group", url);
+	sprintf(newurl, "%s", url_group);
 
 	if (!geturl(newurl, username, password, cafile, sslcheck) || body == NULL) {
 		ret = NSS_STATUS_UNAVAIL;
@@ -634,7 +636,7 @@ enum nss_status _nss_shib_getgrgid_r(gid_t gid, struct group *result, char *buff
 	int ret = NSS_STATUS_UNAVAIL;
 	readconfig();
 	char newurl[1024];
-	sprintf(newurl, "%s?group", url);
+	sprintf(newurl, "%s", url_group);
 	if (!geturl(newurl, username, password, cafile, sslcheck) || body == NULL) {
 		ret = NSS_STATUS_UNAVAIL;
 		goto getgrgid_err;
