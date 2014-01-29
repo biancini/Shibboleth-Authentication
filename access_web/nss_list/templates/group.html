@@ -1,0 +1,2 @@
+{# nss_list/templates/group.html #}{% for group in groups %}{{ group.group_name }}:x:{{ group.group_id }}:{% for user in group.get_active_users.all %}{% if user.user_state == 'A' %}{{ user.login_name }}{% if not forloop.last %},{% endif %}{% endif %}{% endfor %}
+{% endfor %}

@@ -1,0 +1,2 @@
+{# nss_list/templates/passwd.html #}{% for user in users %}{% if user.user_state == 'A' %}{{ user.login_name }}:x:{{ user.user_id }}:{{ user.group_id }}:{{ user.full_name }}:{{ user.home_directory }}:{{ user.login_shell }}
+{% endif %}{% endfor %}

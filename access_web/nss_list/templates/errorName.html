@@ -1,0 +1,23 @@
+{#nss_list/templates/errorName.html #}
+<html>
+<body>
+<h1>Registrazione per l'utente {{ user.login_name }}</h1>
+<p>Questo utente &egrave; gi&agrave; stato registrato con questi dati:
+<ul>
+	<li>login_name = {{ user.login_name }}</li>
+	<li>user_id = {{ user.user_id }}</li>
+	<li>group_id = {{ user.group_id }}</li>
+	<li>full_name = {{ user.full_name }}</li>
+	<li>home_directory = {{ user.home_directory }}</li>
+	<li>login_shell = {{ user.login_shell }}</li>
+</ul></p>
+
+
+{% if user.user_state == 'A' %}
+<p>Attualmente l'utente &egrave; in stato ATTIVO.</p>
+{% else %}
+<p>Attualmente l'utente NON &egrave; in stato attivo.</p>
+{% endif %}
+
+</body>
+</html>

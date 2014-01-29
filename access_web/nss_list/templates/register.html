@@ -1,0 +1,17 @@
+{# nss_list/templates/register.html #}
+
+<html>
+<body>
+<h1>Ciao {{ user.full_name }}.</h1>
+<p>Abbiamo registrato al tua richiesta di accedere a Linux:
+<ul>
+	<li>login_name = {{ user.login_name }}</li>
+	<li>user_id = {{ user.user_id }}</li>
+	<li>group_id = {{ user.group_id }}</li>
+	<li>full_name = {{ user.full_name }}</li>
+	<li>home_directory = {{ user.home_directory }}</li>
+	<li>login_shell = {{ user.login_shell }}</li>
+</ul></p>
+
+</body>
+</html>
