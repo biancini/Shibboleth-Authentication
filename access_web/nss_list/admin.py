@@ -15,5 +15,8 @@ class LinuxGroup_Admin(admin.ModelAdmin):
     list_filter = [] #'status'
     inlines = [LinuxUser_Inline]
 
+
+
 admin.site.register(LinuxUser, LinuxUser_Admin)
 admin.site.register(LinuxGroup, LinuxGroup_Admin)
+

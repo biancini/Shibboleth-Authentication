@@ -1,11 +1,11 @@
-{# nss_list/templates/register.html #}
+{#nss_list/templates/errorName.html #}
 {% load static %}
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Register to access to the linux server with Shibboleth credentials</title>
-	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-	<link rel="stylesheet" href="{% get_static_prefix %}style.css" type="text/css" media="screen" />
+        <title>Register to access to the linux server with Shibboleth credentials</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <link rel="stylesheet" href="{% get_static_prefix %}style.css" type="text/css" media="screen" />
 </head>
 <body>
 <div class="header">
@@ -31,7 +31,7 @@
 </div>
 
 <div id="info">
-	<p>We registered your request to access to the Linux servers, your data is:</p>
+	<p>This user is already registered with this data:</p>
 	<table>
 		<tr><td class="title">login_name</td><td>{{ user.login_name }}</td></tr>
 		<tr><td class="title">user_id</td><td>{{ user.user_id }}</td></tr>
@@ -40,6 +40,12 @@
 		<tr><td class="title">home_directory</td><td>{{ user.home_directory }}</td></tr>
 		<tr><td class="title">login_shell</td><td>{{ user.login_shell }}</td></tr>
 	</table>
+
+	{% if user.user_state == 'A' %}
+	<p>The current user status is: <span class="status">ACTIVE</span>.</p>
+	{% else %}
+	<p>The current user status is: <span class="status">INACTIVE</span>.</p>
+	{% endif %}
 </div>
 
 <div id="footer">

@@ -5,9 +5,13 @@ TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),
+    ('Andrea Biancini', 'andrea.biancini@gmail.com'),
 )
 
 MANAGERS = ADMINS
+
+import os
+BASE_DIR = os.path.dirname(os.path.realpath(__file__)) 
 
 DATABASES = {
     'default': {
@@ -76,6 +80,7 @@ STATICFILES_DIRS = (
     # Put strings here, like "/home/html/static" or "C:/www/django/static".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
+    os.path.join(BASE_DIR, "static"),
 )
 
 # List of finder classes that know how to find static files in
@@ -101,6 +106,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'shibboleth.middleware.ShibbolethRemoteUserMiddleware',
     'django.contrib.auth.middleware.RemoteUserMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
 )
@@ -109,6 +115,15 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
     'django.contrib.auth.backends.RemoteUserBackend',
 )
+
+SHIBBOLETH_ATTRIBUTE_MAP = {
+   #"eppn": (True, "username"), #Valore username impostato dalla variabile REMOTE_USER
+   "givenName": (True, "first_name"),
+   "sn": (True, "last_name"),
+   "mail": (True, "email"),
+}
+
+LOGIN_URL = '/Shibboleth.sso/Login'
 
 ROOT_URLCONF = 'access_web.urls'
 
@@ -129,6 +144,7 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     'django.contrib.admindocs',
+    'shibboleth',
     'nss_list'
 )
 

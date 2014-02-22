@@ -1,4 +1,4 @@
-# Create your views here.
+# Creatr your views here.
 
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
@@ -12,8 +12,7 @@ def passwd(request):
 def group(request):
   return render(request, "group.html", {"groups": LinuxGroup.objects.all()})
 
-  
-def find_uid(proposed):
+def _find_uid(proposed):
   users = LinuxUser.objects.all()
   valid = True
 
@@ -33,7 +32,7 @@ def find_uid(proposed):
 
   return max_uid + 1
 
-def find_gid(proposed):
+def _find_gid(proposed):
   users = LinuxGroup.objects.all()
   valid = True
 
@@ -53,7 +52,6 @@ def find_gid(proposed):
 
   return max_gid + 1
 
-
 @login_required
 def register(request):
   users = LinuxUser.objects.all()
@@ -66,12 +64,12 @@ def register(request):
   homeDirectory = request.META.get('homeDirectory', "/home/%s" % userid)
   loginShell = request.META.get('loginShell', "/bin/bash")
 
-  uid = find_uid(uidNumber)
-  gid = find_gid(gidNumber or uid)
+  uid = _find_uid(uidNumber)
+  gid = _find_gid(gidNumber or uid)
 
   for user in users:
     if user.login_name == userid:
-      return render(request, "errorName.html", {'user': user}) 
+      return render(request, "registered.html", {'user': user}) 
   
   newUser = LinuxUser.objects.create(
     login_name = userid,
@@ -80,10 +78,13 @@ def register(request):
     full_name = cn,
     home_directory = homeDirectory,
     login_shell = loginShell,
-    user_state = 'I')
+    user_state = 'I'
+  )
 
   newGroup = LinuxGroup.objects.create(
     group_name = userid or login_name,
-    group_id = gid)
+    group_id = gid	
+  )
+
 
   return render(request, "register.html", { 'user': newUser })
