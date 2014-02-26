@@ -77,6 +77,23 @@ public class HTTPMethods {
 	 * @see it.infn.mib.shibboleth.jaas.impl.HTTPPage
 	 * @see it.infn.mib.shibboleth.jaas.impl.HTTPException
 	 */
+	public static HTTPPage getUrlOld(String urlToRead, String username, String password, boolean sslCheck, String trustStore, String trustStorePassword) throws HTTPException {
+		HTTPPage returnedPage = null;
+		HTTPMethods.sslCheck = sslCheck;
+		HTTPMethods.trustStore = trustStore;
+		HTTPMethods.trustStorePassword = trustStorePassword;
+		
+		while (urlToRead != null) {
+			returnedPage = getSingleUrl(urlToRead, null);
+			
+			if (returnedPage.getReturnCode() == HttpURLConnection.HTTP_UNAUTHORIZED)
+				returnedPage = getSingleUrl(urlToRead, username + ":" + password);
+		
+			urlToRead = returnedPage.getHeaderField("Location");
+		}
+		
+		return returnedPage;
+	}
 	public static HTTPPage getUrl(String urlToRead, String username, String password, boolean sslCheck, String trustStore, String trustStorePassword) throws HTTPException {
 		HTTPPage returnedPage = null;
 		HTTPMethods.sslCheck = sslCheck;
