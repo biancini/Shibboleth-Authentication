@@ -101,11 +101,10 @@ public class JAASShibbolethLoginModule implements LoginModule {
 	 *			<code>Configuration</code> for this particular
 	 *			<code>LoginModule</code>.
 	 */
-	@Override
 	public void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options) {
 		this.subject = subject;
 		this.callbackHandler = callbackHandler;
-
+		
 		// initialize any configured options
 		debug = "true".equalsIgnoreCase((String) options.get("debug"));
 		HTTPMethods.debug = debug;
@@ -120,7 +119,7 @@ public class JAASShibbolethLoginModule implements LoginModule {
 		trustStorePassword = (String) options.get("truststore_password");
 		if (trustStorePassword.equals("")) trustStorePassword = null;
 	}
-	
+
 	/**
 	 * Authenticate the user by prompting for a user name and password.
 	 *
@@ -134,7 +133,6 @@ public class JAASShibbolethLoginModule implements LoginModule {
 	 * @exception LoginException if this <code>LoginModule</code>
 	 *		is unable to perform the authentication.
 	 */
-	@Override
 	public boolean login() throws LoginException {
 		// prompt for a user name and password
 		if (callbackHandler == null)
@@ -211,7 +209,6 @@ public class JAASShibbolethLoginModule implements LoginModule {
 	 * @return true in all cases since this <code>ShibbolethPrincipal</code>
 	 *          should not be ignored.
 	 */
-	@Override
 	public boolean logout() throws LoginException {
 		subject.getPrincipals().remove(userPrincipal);
 		succeeded = false;
@@ -244,7 +241,6 @@ public class JAASShibbolethLoginModule implements LoginModule {
 	 * @return false if this LoginModule's own login and/or commit attempts
 	 *		failed, and true otherwise.
 	 */
-	@Override
 	public boolean abort() throws LoginException {
 		if (succeeded == false) {
 		    return false;
@@ -287,7 +283,6 @@ public class JAASShibbolethLoginModule implements LoginModule {
 	 * @return true if this LoginModule's own login and commit
 	 *		attempts succeeded, or false otherwise.
 	 */
-	@Override
 	public boolean commit() throws LoginException {
 		if (succeeded == false) {
 		    return false;

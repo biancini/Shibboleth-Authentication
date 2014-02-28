@@ -35,6 +35,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
@@ -129,14 +130,14 @@ public class HTTPMethods {
 		if (HTTPMethods.sslCheck == false) {
 			final TrustManager[] trustAllCerts = new TrustManager[] {
 					new X509TrustManager() {
-						@Override
-						public void checkClientTrusted(final X509Certificate[] chain, final String authType) { }
-						@Override
-						public void checkServerTrusted(final X509Certificate[] chain, final String authType) { }
-						@Override
+						
 						public X509Certificate[] getAcceptedIssuers() {
 							return null;
 						}
+						
+						public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException { }
+						
+						public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException { }
 					}
 				};
 			

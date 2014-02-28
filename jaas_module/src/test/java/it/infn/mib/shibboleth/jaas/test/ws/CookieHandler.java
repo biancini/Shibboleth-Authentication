@@ -15,8 +15,7 @@ public class CookieHandler extends BasicHandler {
 		this.cookies = cookies;
 	}
 	
-	@Override
-	public void invoke(MessageContext context) throws AxisFault {
+	public void invoke(MessageContext msgContext) throws AxisFault {
 		if (cookies != null) {
 			String curCookies = "";
 			
@@ -24,7 +23,7 @@ public class CookieHandler extends BasicHandler {
 				curCookies += curKey + "=" + cookies.get(curKey) + ";";
 			}
 			
-			context.setProperty(HTTPConstants.HEADER_COOKIE, curCookies);
+			msgContext.setProperty(HTTPConstants.HEADER_COOKIE, curCookies);
 		}
 	}
 }
