@@ -33,6 +33,7 @@ import it.infn.mib.shibboleth.jaas.test.ws.BackendPort;
 import it.infn.mib.shibboleth.jaas.test.ws.BackendServiceLocator;
 import it.infn.mib.shibboleth.jaas.test.ws.CookieHandler;
 
+import java.rmi.RemoteException;
 import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
@@ -50,13 +51,15 @@ import org.apache.axis.client.AxisClient;
 import org.apache.axis.configuration.SimpleProvider;
 import org.apache.axis.transport.http.HTTPSender;
 import org.apache.axis.transport.http.HTTPTransport;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Test class that executes a login with the Shibboleth auth module.
  * 
  * @version 1.0, 06/06/2012
  */
-public class LoginMain {
+public class LoginMainTest {
 
 	private static String loggedUser = null;
 	private static Map<String, String> session = null;
@@ -68,7 +71,8 @@ public class LoginMain {
 	 * @return the engine configuration to manage webservice calls
 	 * @exception if some method goes an error
 	 */
-	private static EngineConfiguration createCookieTokenConfig(Map<String, String> cookies) throws Exception { 
+	@Ignore
+	private static EngineConfiguration createCookieTokenConfig(Map<String, String> cookies) throws LoginException { 
 		SimpleProvider clientConfig=new SimpleProvider(); 
 		Handler cookieHandler = (Handler) new CookieHandler(cookies);
 		SimpleChain reqHandler = new SimpleChain(); 
@@ -88,7 +92,8 @@ public class LoginMain {
 	 * @return the stub to call the webservice
 	 * @exception if some method goes an error
 	 */
-	private static BackendBindingStub getCookieTokenBinding(String wsEndpoint, Map<String,String> cookies) throws Exception {
+	@Ignore
+	private static BackendBindingStub getCookieTokenBinding(String wsEndpoint, Map<String,String> cookies) throws LoginException {
 		BackendBindingStub binding = null;
 		
 		try {
@@ -100,7 +105,7 @@ public class LoginMain {
 		}
 		catch (ServiceException jre) {
 			if (jre.getLinkedCause() != null) jre.getLinkedCause().printStackTrace();
-			throw new Exception("JAX-RPC ServiceException caught: " + jre);
+			throw new LoginException("JAX-RPC ServiceException caught: " + jre);
 		}
 
 		binding.setMaintainSession(true);
@@ -111,48 +116,50 @@ public class LoginMain {
 	 * Function to call a webservice with Shibboleth authentication
 	 * 
 	 * @param args No arguments to be passed
+	 * @throws LoginException when the login has an exception
+	 * @throws RemoteException when there is an error in calling webservice
 	 */
-	private static void callWebservice() {
+	@Test
+	private static void callWebservice() throws LoginException, RemoteException {
+		login();
 		System.out.println("Trying to call webservice using obtained credentials.");
 		
-		try {
-			String wsEndpoint = "https://cloud-mi-03.mib.infn.it/secure/webservice.php";
-			AxisProperties.setProperty("axis.socketSecureFactory", "org.apache.axis.components.net.SunFakeTrustSocketFactory");
-			
-			Map<String, String> cookies = new HashMap<String, String>();
-			cookies.put("_shibsession_" + session.get("Shib-Session-Unique"), session.get("Shib-Session-ID"));
-			
-			BackendPort service = getCookieTokenBinding(wsEndpoint, cookies);
-			System.out.println(service.oncall(loggedUser));
-			
-		} catch (Exception e) {
-			System.err.println("Error while calling webservice using SSO.");
-			e.printStackTrace();
-		}
+		String wsEndpoint = "https://cloud-mi-03.mib.infn.it/secure/webservice.php";
+		AxisProperties.setProperty("axis.socketSecureFactory", "org.apache.axis.components.net.SunFakeTrustSocketFactory");
+		
+		Map<String, String> cookies = new HashMap<String, String>();
+		cookies.put("_shibsession_" + session.get("Shib-Session-Unique"), session.get("Shib-Session-ID"));
+		
+		BackendPort service = getCookieTokenBinding(wsEndpoint, cookies);
+		System.out.println(service.oncall(loggedUser));
 	}
 	
 	/**
 	 * Function to login a user.
 	 * 
 	 * @param args No arguments to be passed
+	 * @throws LoginException When the login has an exception
 	 */
-	private static void login() {
-		try {
-			LoginContext lc =  new LoginContext("Shibboleth", new MyCallbackHandler());
-			lc.login();
-			System.out.println("User logged in successfully.");
-			
-			// Prints the session values for the logged in user
-			for (Principal curPrincipal : lc.getSubject().getPrincipals()) {
-				if (curPrincipal instanceof ShibbolethPrincipal) {
-					loggedUser = ((ShibbolethPrincipal) curPrincipal).getName();
-					session = ((ShibbolethPrincipal) curPrincipal).getSession();
-				}
+	@Test
+	private static void login() throws LoginException {
+		LoginContext lc =  new LoginContext("Shibboleth", new MyCallbackHandler());
+		lc.login();
+		System.out.println("User logged in successfully.");
+		
+		// Prints the session values for the logged in user
+		for (Principal curPrincipal : lc.getSubject().getPrincipals()) {
+			if (curPrincipal instanceof ShibbolethPrincipal) {
+				loggedUser = ((ShibbolethPrincipal) curPrincipal).getName();
+				session = ((ShibbolethPrincipal) curPrincipal).getSession();
 			}
-		} catch (LoginException e) {
-			System.err.println("Error logging in user.");
-			e.printStackTrace();
 		}
+		
+		System.out.println("User logged in successfully.");
+		System.out.println("Username for logged user is: " + loggedUser);
+				
+		System.out.println("Printing session for logged in user: ");
+		for (String curKey : session.keySet())
+			System.out.println("[" + curKey + "] => " + session.get(curKey));
 	}
 	
 	/**
@@ -161,7 +168,8 @@ public class LoginMain {
 	 * @param args No arguments to be passed
 	 * @return true if the user session was found in environment, false otherwise
 	 */
-	private static boolean sso() {
+	@Test
+	private static void sso() {
 		String sessUsername = "eduPersonPrincipalName";
 		
 		// The environment variables should not contain the dash character
@@ -173,30 +181,12 @@ public class LoginMain {
 		
 		if (loggedUser == null || shibUnique == null || shibId == null) {
 			System.err.println("Error retrieving user session from environment.");
-			return false;
+			assert(false);
 		}
 		
 		session = new HashMap<String, String>();
 		session.put("Shib-Session-Unique", shibUnique); 
 		session.put("Shib-Session-ID", shibId);
-		return true;
-	}
-	
-	/**
-	 * Main method that executes authentication or SSO.
-	 * 
-	 * @param args If -sso parameter is passed than tries to retrieve Shibboleth session from environment and don't ask for the
-	 * user to login again.
-	 */
-	public static void main(String[] args) {
-		boolean sso = false;
-		if (args != null) {
-			for (String curArg : args) {
-				if ("-sso".equals(curArg)) sso = true;
-			}
-		}
-		
-		if (!sso || !sso()) login();
 		
 		System.out.println("User logged in successfully.");
 		System.out.println("Username for logged user is: " + loggedUser);
@@ -204,8 +194,6 @@ public class LoginMain {
 		System.out.println("Printing session for logged in user: ");
 		for (String curKey : session.keySet())
 			System.out.println("[" + curKey + "] => " + session.get(curKey));
-		
-		callWebservice();
 	}
 
 }

@@ -10,6 +10,9 @@ package it.infn.mib.shibboleth.jaas.test.ws;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
+import org.junit.Ignore;
+
+@Ignore
 public interface BackendPort extends Remote {
     public String oncall(String loggeduser) throws RemoteException;
 }

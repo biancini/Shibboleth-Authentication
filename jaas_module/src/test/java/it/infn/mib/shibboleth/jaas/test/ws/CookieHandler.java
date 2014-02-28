@@ -6,7 +6,9 @@ import org.apache.axis.AxisFault;
 import org.apache.axis.MessageContext;
 import org.apache.axis.handlers.BasicHandler;
 import org.apache.axis.transport.http.HTTPConstants;
+import org.junit.Ignore;
 
+@Ignore
 public class CookieHandler extends BasicHandler {
 	private static final long serialVersionUID = -2222269423530332417L;
 	

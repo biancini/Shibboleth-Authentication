@@ -17,8 +17,10 @@ import javax.xml.rpc.ServiceException;
 import org.apache.axis.AxisFault;
 import org.apache.axis.EngineConfiguration;
 import org.apache.axis.client.Service;
+import org.junit.Ignore;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
+@Ignore
 public class BackendServiceLocator extends Service implements BackendService {
 
 	private static final long serialVersionUID = -5953657190235244955L;

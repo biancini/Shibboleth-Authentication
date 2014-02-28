@@ -38,11 +38,14 @@ import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 
+import org.junit.Ignore;
+
 /**
  * Default callback handler that prompts the user to insert the required data.
  * 
  * @version 1.0, 06/06/2012
  */
+@Ignore
 public class MyCallbackHandler implements CallbackHandler {
     
 	/**

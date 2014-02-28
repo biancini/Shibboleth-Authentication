@@ -12,6 +12,9 @@ import java.net.URL;
 import javax.xml.rpc.Service;
 import javax.xml.rpc.ServiceException;
 
+import org.junit.Ignore;
+
+@Ignore
 public interface BackendService extends Service {
 	
     public String getBackendPortAddress();

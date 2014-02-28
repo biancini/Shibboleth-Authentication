@@ -22,8 +22,10 @@ import org.apache.axis.constants.Use;
 import org.apache.axis.description.OperationDesc;
 import org.apache.axis.description.ParameterDesc;
 import org.apache.axis.utils.JavaUtils;
+import org.junit.Ignore;
 
 @SuppressWarnings("rawtypes")
+@Ignore
 public class BackendBindingStub extends Stub implements BackendPort {
 
 	static OperationDesc[] _operations;

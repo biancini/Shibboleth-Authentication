@@ -5,6 +5,9 @@ import java.rmi.RemoteException;
 import javax.xml.rpc.ServiceException;
 import javax.xml.rpc.Stub;
 
+import org.junit.Ignore;
+
+@Ignore
 public class BackendPortProxy implements BackendPort {
 	
 	private String _endpoint = null;
