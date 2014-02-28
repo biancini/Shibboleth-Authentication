@@ -45,7 +45,7 @@ import com.gargoylesoftware.htmlunit.util.NameValuePair;
 /**
  * Static methods to open web pages.
  * <p>
- * These methods manage authentication (via HTTP Basic), cookies and redirects.
+ * These methods manage authentication, cookies and redirects.
  * 
  *  @version 1.0, 06/06/12
  */
