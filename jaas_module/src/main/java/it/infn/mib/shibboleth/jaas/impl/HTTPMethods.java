@@ -27,26 +27,20 @@
 
 package it.infn.mib.shibboleth.jaas.impl;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.URL;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-
-import org.apache.commons.codec.binary.Base64;
+import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
+import com.gargoylesoftware.htmlunit.WebClient;
+import com.gargoylesoftware.htmlunit.html.HtmlButton;
+import com.gargoylesoftware.htmlunit.html.HtmlForm;
+import com.gargoylesoftware.htmlunit.html.HtmlPage;
+import com.gargoylesoftware.htmlunit.html.HtmlPasswordInput;
+import com.gargoylesoftware.htmlunit.html.HtmlTextInput;
+import com.gargoylesoftware.htmlunit.util.NameValuePair;
 
 /**
  * Static methods to open web pages.
@@ -58,9 +52,11 @@ import org.apache.commons.codec.binary.Base64;
 public class HTTPMethods {
 	public static boolean debug = false;
 	private static List<String> cookies = new ArrayList<String>();
-	private static boolean sslCheck = false;
-	private static String trustStore = null;
-	private static String trustStorePassword = null;
+	
+	private static final String SHIBBOLETH_XPATH_FORM = "//form";
+	private static final String SHIBBOLETH_XPATH_BUTTON = "//button";
+	private static final String SHIBBOLETH_USERNAME_FIELD = "j_username";
+	private static final String SHIBBOLETH_PASSWORD_FIELD = "j_password";
 	
 	/**
 	 * Retrieve an URL managing cookies, following redirects and performing HTTP Basic
@@ -78,161 +74,58 @@ public class HTTPMethods {
 	 * @see it.infn.mib.shibboleth.jaas.impl.HTTPPage
 	 * @see it.infn.mib.shibboleth.jaas.impl.HTTPException
 	 */
-	public static HTTPPage getUrlOld(String urlToRead, String username, String password, boolean sslCheck, String trustStore, String trustStorePassword) throws HTTPException {
-		HTTPPage returnedPage = null;
-		HTTPMethods.sslCheck = sslCheck;
-		HTTPMethods.trustStore = trustStore;
-		HTTPMethods.trustStorePassword = trustStorePassword;
-		
-		while (urlToRead != null) {
-			returnedPage = getSingleUrl(urlToRead, null);
-			
-			if (returnedPage.getReturnCode() == HttpURLConnection.HTTP_UNAUTHORIZED)
-				returnedPage = getSingleUrl(urlToRead, username + ":" + password);
-		
-			urlToRead = returnedPage.getHeaderField("Location");
-		}
-		
-		return returnedPage;
-	}
 	public static HTTPPage getUrl(String urlToRead, String username, String password, boolean sslCheck, String trustStore, String trustStorePassword) throws HTTPException {
 		HTTPPage returnedPage = null;
-		HTTPMethods.sslCheck = sslCheck;
-		HTTPMethods.trustStore = trustStore;
-		HTTPMethods.trustStorePassword = trustStorePassword;
 		
-		while (urlToRead != null) {
-			returnedPage = getSingleUrl(urlToRead, null);
-			
-			if (returnedPage.getReturnCode() == HttpURLConnection.HTTP_UNAUTHORIZED)
-				returnedPage = getSingleUrl(urlToRead, username + ":" + password);
-		
-			urlToRead = returnedPage.getHeaderField("Location");
+		try {
+			returnedPage = loginShibboleth(urlToRead, username, trustStorePassword, sslCheck);
+		} catch (FailingHttpStatusCodeException | IOException e) {
+			throw new HTTPException("Error during login with Shibboleth.", e);
 		}
 		
 		return returnedPage;
 	}
 	
-	/**
-	 * Create the HTTPs connection enabling or disabling the check on SSL certificates.
-	 * 
-	 * @param urlToRead The URL of the page to be opened.
-	 * @return <code>HttpURLConnection</code> object with the connection with the server
-	 * @exception NoSuchAlgorithmException if the SSL cypher algorithm is not supported
-	 * @exception KeyManagementException if the management of certificate keys returns an error
-	 * @exception MalformedURLException if the supplied URL is not in a correct format
-	 * @exception IOException if there is an error in accessing the keystore file
-	 */
-	private static HttpURLConnection createConnectionHttps(String urlToRead) throws NoSuchAlgorithmException, KeyManagementException, MalformedURLException, IOException {
-	    // All set up, we can get a resource through https now:
-	    final HttpURLConnection conn = (HttpURLConnection) new URL(urlToRead).openConnection();
-	    
-		if (HTTPMethods.sslCheck == false) {
-			final TrustManager[] trustAllCerts = new TrustManager[] {
-					new X509TrustManager() {
-						
-						public X509Certificate[] getAcceptedIssuers() {
-							return null;
-						}
-						
-						public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException { }
-						
-						public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException { }
-					}
-				};
-			
-			// Install the all-trusting trust manager
-		    final SSLContext sslContext = SSLContext.getInstance("SSL");
-		    sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
-		    // Create an ssl socket factory with our all-trusting manager
-		    final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-		    
-		    // Tell the url connection object to use our socket factory which bypasses security checks
-		    ((HttpsURLConnection) conn).setSSLSocketFactory(sslSocketFactory);
-		}
-		else {
-			if (trustStore != null) System.setProperty( "javax.net.ssl.trustStore", trustStore);
-			if (trustStorePassword != null) System.setProperty( "javax.net.ssl.trustStorePassword", trustStorePassword);
-		}
-		
-		return conn;
-	}
+	protected static HTTPPage loginShibboleth(String urlToRead, String username, String password, boolean sslCheck) throws FailingHttpStatusCodeException, MalformedURLException, IOException {
+		final WebClient webClient = new WebClient();
+		webClient.getOptions().setUseInsecureSSL(!sslCheck);
 
-	/**
-	 * Open a single HTTP page managing cookies and Basic authentication.
-	 * 
-	 * @param urlToRead The URL of the page to be opened.
-	 * @param basicString The string to be passed as basic authentication. If <code>null</code>
-	 * no authentication is performed on the webserver, otherwise the <code>username:password</code>
-	 * specified in this parameter as passed as the Basic authentication string.
-	 * @return <code>HttpURLConnection</code> object with the connection with the server
-	 *
-	 * @exception <code>HTTPException</code> if there has been an error in retrieving the URL.
-	 * @see it.infn.mib.shibboleth.jaas.impl.HTTPPage
-	 * @see it.infn.mib.shibboleth.jaas.impl.HTTPException
-	 */
-	protected static HTTPPage getSingleUrl(String urlToRead, String basicString) throws HTTPException {
-		HttpURLConnection conn = null;
-		BufferedReader rd = null;
-		String line = null;
+		HtmlPage curWebPage = webClient.getPage(urlToRead);
+		final HtmlForm form = (HtmlForm) curWebPage.getByXPath(SHIBBOLETH_XPATH_FORM).get(0);
+		final HtmlButton button = (HtmlButton) form.getByXPath(SHIBBOLETH_XPATH_BUTTON).get(0);
+
+		final HtmlTextInput usernameField = form.getInputByName(SHIBBOLETH_USERNAME_FIELD);
+		final HtmlPasswordInput passwordField = form.getInputByName(SHIBBOLETH_PASSWORD_FIELD);
+
+		usernameField.setValueAttribute(username);
+		passwordField.setValueAttribute(password);
+
+		curWebPage = button.click();
+		
 		HTTPPage returnedPage = new HTTPPage();
+		returnedPage.setReturnCode(curWebPage.getWebResponse().getStatusCode());
 		
-		try {
-			String cookiesString = "";
-	        for (String cookie: cookies) cookiesString += (cookiesString.equals("") ? "" : ";") + cookie;
-	        
-			if (debug) System.err.println("Opening URL: " + urlToRead);
-			if (debug) System.err.println("Passing the following cookies: " + cookiesString);
-
-			if (urlToRead.startsWith("https://")) conn = createConnectionHttps(urlToRead);
-			else conn = (HttpURLConnection) new URL(urlToRead).openConnection();
+		for (NameValuePair curHeader : curWebPage.getWebResponse().getResponseHeaders()) {
+			returnedPage.addHeaderField(curHeader.getName(), curHeader.getValue());
 			
-			conn.setRequestMethod("GET");
-			conn.setInstanceFollowRedirects(false);
-			conn.addRequestProperty("Cookie", cookiesString);
-			
-			if (basicString != null) {
-				if (debug) System.err.println("Basic authentication string: " + basicString);
-				String encoding = new String(new Base64().encode(basicString.getBytes()));
-				conn.setRequestProperty("Authorization", "Basic " + encoding);
+			if (curHeader.getName().equals("Set-Cookie")) {
+				String curCookie = curHeader.getValue();
+				if (curCookie.indexOf(";") > 0) curCookie = curCookie.substring(0, curCookie.indexOf(";"));
+				cookies.add(curCookie);
 			}
-			
-			conn.connect();
-			returnedPage.setReturnCode(conn.getResponseCode());
-			
-			for (String headerKey : conn.getHeaderFields().keySet()) {
-				if (headerKey != null) {
-					returnedPage.addHeaderField(headerKey, conn.getHeaderField(headerKey));
-				
-					if (headerKey.equals("Set-Cookie")) {
-						String curCookie = conn.getHeaderField(headerKey);
-						if (curCookie.indexOf(";") > 0) curCookie = curCookie.substring(0, curCookie.indexOf(";"));
-						cookies.add(curCookie);
-					}
-				}
-			}
-			
-			if (debug) System.err.println("Response code: " + returnedPage.getReturnCode());
-			
-			if (returnedPage.getReturnCode() == HttpURLConnection.HTTP_OK) {
-				rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-				while ((line = rd.readLine()) != null) {
-					returnedPage.addBodyRow(line);
-				}
-				rd.close();
-			}
-		} catch (KeyManagementException e) {
-			throw new HTTPException("Error while retrieving url " + urlToRead, e, "KeyManagementException");
-		} catch (NoSuchAlgorithmException e) {
-			throw new HTTPException("Error while retrieving url " + urlToRead, e, "NoSuchAlgorithmException");
-		} catch (MalformedURLException e) {
-			throw new HTTPException("Error while retrieving url " + urlToRead, e, "MalformedURLException");
-		} catch (IOException e) {
-			throw new HTTPException("Error while retrieving url " + urlToRead, e, "IOException");
-		} finally {
-			if (conn != null) conn.disconnect();
 		}
 		
+		if (debug) System.err.println("Response code: " + returnedPage.getReturnCode());
+		
+		if (returnedPage.getReturnCode() == HttpURLConnection.HTTP_OK) {
+			String[] bodyLines = curWebPage.asText().split("\n");
+			for (String line : bodyLines) {
+				returnedPage.addBodyRow(line);
+			}
+		}
+		
+		webClient.closeAllWindows();
 		return returnedPage;
 	}
+
 }
