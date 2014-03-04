@@ -27,10 +27,7 @@
 
 package it.infn.mib.shibboleth.jaas.test;
 
-import java.io.BufferedReader;
-import java.io.Console;
 import java.io.IOException;
-import java.io.InputStreamReader;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -46,7 +43,15 @@ import org.junit.Ignore;
  * @version 1.0, 06/06/2012
  */
 @Ignore
-public class MyCallbackHandler implements CallbackHandler {
+public class FixedTestCallbackHandler implements CallbackHandler {
+	
+	private String username;
+	private String password;
+	
+	public FixedTestCallbackHandler(String username, String password) {
+		this.username = username;
+		this.password = password;
+	}
     
 	/**
 	 * Invoke an array of Callbacks.
@@ -58,38 +63,12 @@ public class MyCallbackHandler implements CallbackHandler {
     public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
     	for (int i = 0; i < callbacks.length; i++) {
     		if (callbacks[i] instanceof NameCallback) {
-    			((NameCallback)callbacks[i]).setName(readLine(((NameCallback) callbacks[i]).getPrompt(), false));
+    			((NameCallback)callbacks[i]).setName(username);
     		} else if (callbacks[i] instanceof PasswordCallback) {
-    			((PasswordCallback) callbacks[i]).setPassword(readLine(((PasswordCallback) callbacks[i]).getPrompt(), true).toCharArray());
+    			((PasswordCallback) callbacks[i]).setPassword(password.toCharArray());
     		} else {
     			throw new UnsupportedCallbackException(callbacks[i], "MyCallbackHandler: Unrecognized Callback");
     		}
     	}
-    }
-    
-    /**
-	 * Method that reads a line from input console.
-	 * 
-	 * @param prompt The text to be show to the user asking for input.
-	 * @param masquered A boolean value indicating if the input of the user
-	 * must be masquered on the console or not.
-	 * @return The line of text read.
-	 * @exception IOException if there is an error reading from console.
-	 */
-    public static String readLine(String prompt, boolean masquered) throws IOException {
-    	Console console = System.console();
-        if (console != null) {
-        	String input = null;
-        	if (masquered) input = new String(console.readPassword(prompt));
-            else input = new String(console.readLine(prompt));
-        	return input;
-        }
-        else { 
-        	System.err.println("Unable to obtain console");
-        	System.out.print(prompt);
-        	InputStreamReader converter = new InputStreamReader(System.in);
-        	BufferedReader in = new BufferedReader(converter);
-        	return in.readLine();
-        }
     }
 }

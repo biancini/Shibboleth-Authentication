@@ -34,11 +34,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
+import com.gargoylesoftware.htmlunit.Page;
+import com.gargoylesoftware.htmlunit.TextPage;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlButton;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.html.HtmlPasswordInput;
+import com.gargoylesoftware.htmlunit.html.HtmlSelect;
+import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
 import com.gargoylesoftware.htmlunit.html.HtmlTextInput;
 import com.gargoylesoftware.htmlunit.util.NameValuePair;
 
@@ -54,7 +58,9 @@ public class HTTPMethods {
 	private static List<String> cookies = new ArrayList<String>();
 	
 	private static final String SHIBBOLETH_XPATH_FORM = "//form";
+	private static final String SHIBBOLETH_XPATH_SUBMIT = "//input[@value=\"Select\"]";
 	private static final String SHIBBOLETH_XPATH_BUTTON = "//button";
+	private static final String SHIBBOLETH_ORIGIN_FIELD = "origin";
 	private static final String SHIBBOLETH_USERNAME_FIELD = "j_username";
 	private static final String SHIBBOLETH_PASSWORD_FIELD = "j_password";
 	
@@ -69,6 +75,7 @@ public class HTTPMethods {
 	 * @param trustStore The name of the trust store file to be used for SSL certificates checks.
 	 * @param trustStorePassword The password to be used to open the trust store used for SSL certificates checks.
 	 * @return <code>HTTPPage</code> object containing the page opened from the server
+	 * @throws HTTPException
 	 * 
 	 * @exception <code>HTTPException</code> if there has been an error in retrieving the URL.
 	 * @see it.infn.mib.shibboleth.jaas.impl.HTTPPage
@@ -78,7 +85,46 @@ public class HTTPMethods {
 		HTTPPage returnedPage = null;
 		
 		try {
-			returnedPage = loginShibboleth(urlToRead, username, trustStorePassword, sslCheck);
+			final WebClient webClient = new WebClient();
+			webClient.getOptions().setUseInsecureSSL(!sslCheck);
+			Page curWebPage = (Page) webClient.getPage(urlToRead);
+			
+			while(curWebPage.isHtmlPage()) {
+				HtmlPage htmlCurWebPage = (HtmlPage) (curWebPage);
+				if(htmlCurWebPage.asXml().contains("/dsc/DS")) {
+					curWebPage = shibbolethDS(curWebPage, username, password);
+				} else if (htmlCurWebPage.asXml().contains("j_username") && htmlCurWebPage.asXml().contains("j_password")) {
+					curWebPage = shibbolethIDP(curWebPage, username, password);
+				} else {
+					throw new HTTPException("The page has not been recognized");
+				}
+			}
+			
+			TextPage textCurWebPage = (TextPage) curWebPage;
+			returnedPage = new HTTPPage();
+			returnedPage.setReturnCode(curWebPage.getWebResponse().getStatusCode());
+			
+			for (NameValuePair curHeader : curWebPage.getWebResponse().getResponseHeaders()) {
+				returnedPage.addHeaderField(curHeader.getName(), curHeader.getValue());
+				
+				if (curHeader.getName().equals("Set-Cookie")) {
+					String curCookie = curHeader.getValue();
+					if (curCookie.indexOf(";") > 0) curCookie = curCookie.substring(0, curCookie.indexOf(";"));
+					cookies.add(curCookie);
+				}
+			}
+			
+			if (debug) System.err.println("Response code: " + returnedPage.getReturnCode());
+			if (debug) System.err.println("textCurWebPage.getContent(): " + textCurWebPage.getContent());
+			
+			if (returnedPage.getReturnCode() == HttpURLConnection.HTTP_OK) {
+				String[] bodyLines = textCurWebPage.getContent().split("\n");
+				for (String line : bodyLines) {
+					returnedPage.addBodyRow(line);
+				}
+			}
+			
+			webClient.closeAllWindows();
 		} catch (FailingHttpStatusCodeException | IOException e) {
 			throw new HTTPException("Error during login with Shibboleth.", e);
 		}
@@ -86,46 +132,46 @@ public class HTTPMethods {
 		return returnedPage;
 	}
 	
-	protected static HTTPPage loginShibboleth(String urlToRead, String username, String password, boolean sslCheck) throws FailingHttpStatusCodeException, MalformedURLException, IOException {
-		final WebClient webClient = new WebClient();
-		webClient.getOptions().setUseInsecureSSL(!sslCheck);
-
-		HtmlPage curWebPage = webClient.getPage(urlToRead);
-		final HtmlForm form = (HtmlForm) curWebPage.getByXPath(SHIBBOLETH_XPATH_FORM).get(0);
+	/** Process Shibboleth DS **/
+	protected static Page shibbolethDS(Page curWebPage, String username, String password) throws HTTPException, IOException {
+		if(!curWebPage.isHtmlPage()) {
+			throw new HTTPException("The page is not a HTML page");
+		}
+		
+		HtmlPage htmlCurWebPage = (HtmlPage) curWebPage;
+		
+		final HtmlForm form = (HtmlForm) htmlCurWebPage.getByXPath(SHIBBOLETH_XPATH_FORM).get(1);
+		final HtmlSubmitInput submit = (HtmlSubmitInput) form.getFirstByXPath(SHIBBOLETH_XPATH_SUBMIT);
+		final HtmlSelect originField = form.getSelectByName(SHIBBOLETH_ORIGIN_FIELD);
+		
+		originField.setSelectedAttribute(originField.getOptions().get(0), true);
+		curWebPage = submit.click();
+		
+		return curWebPage;
+	}
+	
+	/** Process Shibboleth IDP **/
+	protected static Page shibbolethIDP(Page curWebPage, String username, String password) throws FailingHttpStatusCodeException, MalformedURLException, IOException, HTTPException {
+		if(!curWebPage.isHtmlPage()) {
+			throw new HTTPException("The page is not a HTML page");
+		}
+		
+		HtmlPage htmlCurWebPage = (HtmlPage) curWebPage;
+		
+		final HtmlForm form = (HtmlForm) htmlCurWebPage.getByXPath(SHIBBOLETH_XPATH_FORM).get(0);
 		final HtmlButton button = (HtmlButton) form.getByXPath(SHIBBOLETH_XPATH_BUTTON).get(0);
-
 		final HtmlTextInput usernameField = form.getInputByName(SHIBBOLETH_USERNAME_FIELD);
 		final HtmlPasswordInput passwordField = form.getInputByName(SHIBBOLETH_PASSWORD_FIELD);
-
+		
 		usernameField.setValueAttribute(username);
 		passwordField.setValueAttribute(password);
 
 		curWebPage = button.click();
 		
-		HTTPPage returnedPage = new HTTPPage();
-		returnedPage.setReturnCode(curWebPage.getWebResponse().getStatusCode());
-		
-		for (NameValuePair curHeader : curWebPage.getWebResponse().getResponseHeaders()) {
-			returnedPage.addHeaderField(curHeader.getName(), curHeader.getValue());
-			
-			if (curHeader.getName().equals("Set-Cookie")) {
-				String curCookie = curHeader.getValue();
-				if (curCookie.indexOf(";") > 0) curCookie = curCookie.substring(0, curCookie.indexOf(";"));
-				cookies.add(curCookie);
-			}
+		if(curWebPage.isHtmlPage()) {
+			throw new HTTPException("The page result is not a Text page");
 		}
 		
-		if (debug) System.err.println("Response code: " + returnedPage.getReturnCode());
-		
-		if (returnedPage.getReturnCode() == HttpURLConnection.HTTP_OK) {
-			String[] bodyLines = curWebPage.asText().split("\n");
-			for (String line : bodyLines) {
-				returnedPage.addBodyRow(line);
-			}
-		}
-		
-		webClient.closeAllWindows();
-		return returnedPage;
+		return curWebPage;
 	}
-
 }
