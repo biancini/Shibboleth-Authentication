@@ -12,17 +12,29 @@ import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.html.HtmlSelect;
 import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
 
+/**
+ * Object representing an HTTP Page recognizer for the Shibboleth DS.
+ * 
+ * @version 1.0, 05/03/2014
+ */
 public class ShibbolethDS implements IRecognizer {
 	
 	private static final String SHIBBOLETH_XPATH_FORM = "//form";
 	private static final String SHIBBOLETH_XPATH_SUBMIT = "//input[@value=\"Select\"]";
 	private static final String SHIBBOLETH_ORIGIN_FIELD = "origin";
 
+	/**
+	 * {@inheritDoc}
+	 */
 	public boolean isThisUrl(String htmlCurWebPageText) {
+		// TODO: this verification mechanism for Shibboleth DS is too weak...
 		return htmlCurWebPageText.contains("/dsc/DS");
 	}
 
-	public Page processUrl(Page curWebPage, String username, String password, Integer selection) throws HTTPException, IOException {
+	/**
+	 * {@inheritDoc}
+	 */
+	public Page processUrl(Page curWebPage, String username, String password, Integer selection) throws HTTPException {
 		if(!curWebPage.isHtmlPage()) {
 			throw new HTTPException("The page is not a HTML page");
 		}
@@ -34,15 +46,25 @@ public class ShibbolethDS implements IRecognizer {
 		final HtmlSelect originField = form.getSelectByName(SHIBBOLETH_ORIGIN_FIELD);
 		
 		originField.setSelectedAttribute(originField.getOptions().get(selection), true);
-		curWebPage = submit.click();
+		try {
+			curWebPage = submit.click();
+		} catch (IOException e) {
+			throw new HTTPException("Error during page processing", e);
+		}
 		
 		return curWebPage;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	public boolean continueTheChain() {
 		return true;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	public String[] getChoices(Page curWebPage) {
 		HtmlPage htmlCurWebPage = (HtmlPage) curWebPage;
 		
