@@ -87,7 +87,8 @@ public class JAASShibbolethLoginModule implements LoginModule {
 	private HTTPPage page = null;
 	
 	private Integer selection = null;
-	private String recognizers = null;
+	private List<Class<?>> recognizers = null;
+	
 
 	/**
 	 * Initialize this <code>LoginModule</code>.
@@ -112,7 +113,6 @@ public class JAASShibbolethLoginModule implements LoginModule {
 		
 		// initialize any configured options
 		debug = "true".equalsIgnoreCase((String) options.get("debug"));
-		HTTPMethods.debug = debug;
 		
 		//tryFirstPass = options.get("try_first_pass") != null;
 		//useFirstPass = options.get("use_first_pass") != null;
@@ -123,8 +123,19 @@ public class JAASShibbolethLoginModule implements LoginModule {
 		if (trustStore.equals("")) trustStore = null;
 		trustStorePassword = (String) options.get("truststore_password");
 		if (trustStorePassword.equals("")) trustStorePassword = null;
-		recognizers = (String) options.get("recognizers");
-		if (recognizers.equals("")) recognizers = null;
+		
+		String strRecognizers = (String) options.get("recognizers");
+		if (strRecognizers != null && !strRecognizers.equals("")) {
+			recognizers = new ArrayList<Class<?>>();
+			String[] clazzes = strRecognizers.split(",");
+			for (String clazz : clazzes) {
+				try {
+					recognizers.add(Class.forName(clazz));
+				} catch (ClassNotFoundException e) {
+					// Do nothing
+				}
+			}
+		}
 	}
 
 	/**
@@ -145,15 +156,14 @@ public class JAASShibbolethLoginModule implements LoginModule {
 		if (callbackHandler == null)
 		    throw new LoginException("Error: no CallbackHandler available to garner authentication information from the user");
 		
-		HTTPMethods.recognizers = recognizers;
-
+		HTTPMethods httpMethods = new HTTPMethods(debug, recognizers, sslCheck, trustStore, trustStorePassword);
 		List<Callback> callbacks = new ArrayList<Callback>();
 		callbacks.add(new NameCallback("Username: "));
 		callbacks.add(new PasswordCallback("Password: ", false));
 		
 		String[] choices = null;
 		try {
-			choices = HTTPMethods.getChoices(url, sslCheck);
+			choices = httpMethods.getChoices(url, sslCheck);
 			if(choices != null) {
 				callbacks.add(new ChoiceCallback("Choice: ", choices, 0, false));
 			}
@@ -192,7 +202,7 @@ public class JAASShibbolethLoginModule implements LoginModule {
 		}
 
 		try {
-			page = HTTPMethods.getUrl(url, username, new String(password), selection, sslCheck, trustStore, trustStorePassword);
+			page = httpMethods.getUrl(url, username, new String(password), selection);
 			if (page.getReturnCode() == HttpURLConnection.HTTP_OK) {
 				for (String curRow : page.getBodyRows()) {
 					if (curRow.startsWith("authenticated") && new Boolean(curRow.replace("authenticated=", "").trim()).booleanValue()) {

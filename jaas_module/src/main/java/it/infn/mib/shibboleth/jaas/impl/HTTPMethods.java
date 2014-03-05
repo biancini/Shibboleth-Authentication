@@ -27,12 +27,10 @@
 
 package it.infn.mib.shibboleth.jaas.impl;
 
-import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.Page;
 import com.gargoylesoftware.htmlunit.TextPage;
 import com.gargoylesoftware.htmlunit.WebClient;
@@ -47,9 +45,21 @@ import com.gargoylesoftware.htmlunit.util.NameValuePair;
  *  @version 1.0, 06/06/12
  */
 public class HTTPMethods {
-	public static boolean debug = false;
-	private static List<String> cookies = new ArrayList<String>();
-	public static String recognizers = null;
+	private boolean debug = false;
+	private List<String> cookies = new ArrayList<String>();
+	protected List<Class<?>> recognizers = null;
+	
+	protected boolean sslCheck = false;
+	protected String trustStore = null;
+	protected String trustStorePassword = null;
+	
+	public HTTPMethods(boolean debug, List<Class<?>> recognizers, boolean sslCheck, String trustStore, String trustStorePassword) {
+		this.debug = debug;
+		this.recognizers = recognizers;
+		this.sslCheck = sslCheck;
+		this.trustStore = trustStore;
+		this.trustStorePassword = trustStorePassword;
+	}
 	
 	/**
 	 * Retrieve an URL managing cookies, following redirects and performing HTTP Basic
@@ -60,7 +70,7 @@ public class HTTPMethods {
 	 * @param password The password to be passed in HTTP Basic authentication to pages requesting it.
 	 * @param sslCheck A flag indicating whether the checks on SSL certificates must be performed or not. 
 	 * @param trustStore The name of the trust store file to be used for SSL certificates checks.
-	 * @param trustStorePassword The password to be used to open the trust store used for SSL certificates checks.
+	 * @param trustStorePassword The paHTTPMethodsssword to be used to open the trust store used for SSL certificates checks.
 	 * @return <code>HTTPPage</code> object containing the page opened from the server
 	 * @throws HTTPException
 	 * 
@@ -68,7 +78,7 @@ public class HTTPMethods {
 	 * @see it.infn.mib.shibboleth.jaas.impl.HTTPPage
 	 * @see it.infn.mib.shibboleth.jaas.impl.HTTPException
 	 */
-	public static HTTPPage getUrl(String urlToRead, String username, String password, int selection, boolean sslCheck, String trustStore, String trustStorePassword) throws HTTPException {
+	public HTTPPage getUrl(String urlToRead, String username, String password, int selection) throws HTTPException {
 		HTTPPage returnedPage = null;
 		final WebClient webClient = new WebClient();
 		
@@ -81,18 +91,14 @@ public class HTTPMethods {
 				recognized = false;
 				HtmlPage htmlCurWebPage = (HtmlPage) (curWebPage);
 				
-				if(recognizers != null) {
-					String[] clazzes = recognizers.split(",");
-					
-					for(int i=0; i<clazzes.length; i++) {
-						String className = clazzes[i];
-						Class<?> clazz = Class.forName(className);
+				if (recognizers != null) {
+					for (Class<?> clazz : recognizers) {
 						IRecognizer landingPage = (IRecognizer) clazz.newInstance();
-						if(landingPage.isThisUrl(htmlCurWebPage.asXml())) {
+						if (landingPage.isThisUrl(htmlCurWebPage.asXml())) {
 							recognized = true;
 							curWebPage = landingPage.processUrl(htmlCurWebPage, username, password, selection);
 							
-							if(!landingPage.continueTheChain()) {
+							if (!landingPage.continueTheChain()) {
 								break;
 							}
 						}
@@ -129,7 +135,7 @@ public class HTTPMethods {
 					returnedPage.addBodyRow(line);
 				}
 			}
-		} catch (FailingHttpStatusCodeException | IOException | IllegalAccessException | InstantiationException | ClassNotFoundException e) {
+		} catch (Exception e) {
 			throw new HTTPException("Error during login with Shibboleth.", e);
 		} finally {
 			webClient.closeAllWindows();
@@ -138,28 +144,24 @@ public class HTTPMethods {
 		return returnedPage;
 	}
 	
-	public static String[] getChoices(String urlToRead, boolean sslCheck) throws HTTPException {
+	public String[] getChoices(String urlToRead, boolean sslCheck) throws HTTPException {
 		final WebClient webClient = new WebClient();
 		
 		try {
 			webClient.getOptions().setUseInsecureSSL(!sslCheck);
 			HtmlPage curWebPage = webClient.getPage(urlToRead);
 			
-			if(recognizers != null) {
-				String[] clazzes = recognizers.split(",");
-				
-				for(int i=0; i<clazzes.length; i++) {
-					String className = clazzes[i];
-					Class<?> clazz = Class.forName(className);
+			if (recognizers != null) {
+				for (Class<?> clazz : recognizers) {
 					IRecognizer landingPage = (IRecognizer) clazz.newInstance();
-					if(landingPage.isThisUrl(curWebPage.asXml())) {
+					if (landingPage.isThisUrl(curWebPage.asXml())) {
 						return landingPage.getChoices(curWebPage);
 					}
 				}
 			} else {
 				throw new HTTPException("Initialize recognizers property");
 			}
-		} catch (FailingHttpStatusCodeException | IOException | IllegalAccessException | InstantiationException | ClassNotFoundException e) {
+		} catch (Exception e) {
 			throw new HTTPException("Error during login with Shibboleth.", e);
 		} finally {
 			webClient.closeAllWindows();

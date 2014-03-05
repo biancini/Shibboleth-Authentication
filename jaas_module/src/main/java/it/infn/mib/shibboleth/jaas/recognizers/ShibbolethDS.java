@@ -1,4 +1,7 @@
-package it.infn.mib.shibboleth.jaas.impl;
+package it.infn.mib.shibboleth.jaas.recognizers;
+
+import it.infn.mib.shibboleth.jaas.impl.HTTPException;
+import it.infn.mib.shibboleth.jaas.impl.IRecognizer;
 
 import java.io.IOException;
 
@@ -15,12 +18,10 @@ public class ShibbolethDS implements IRecognizer {
 	private static final String SHIBBOLETH_XPATH_SUBMIT = "//input[@value=\"Select\"]";
 	private static final String SHIBBOLETH_ORIGIN_FIELD = "origin";
 
-	@Override
 	public boolean isThisUrl(String htmlCurWebPageText) {
 		return htmlCurWebPageText.contains("/dsc/DS");
 	}
 
-	@Override
 	public Page processUrl(Page curWebPage, String username, String password, Integer selection) throws HTTPException, IOException {
 		if(!curWebPage.isHtmlPage()) {
 			throw new HTTPException("The page is not a HTML page");
@@ -38,12 +39,10 @@ public class ShibbolethDS implements IRecognizer {
 		return curWebPage;
 	}
 
-	@Override
 	public boolean continueTheChain() {
 		return true;
 	}
 
-	@Override
 	public String[] getChoices(Page curWebPage) {
 		HtmlPage htmlCurWebPage = (HtmlPage) curWebPage;
 		

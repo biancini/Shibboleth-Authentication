@@ -184,8 +184,9 @@ public class LoginMainTest {
 		System.out.println("wrongLogin Username for logged user is: " + loggedUser);
 
 		System.out.println("wrongLogin Printing session for logged in user: ");
-		for (String curKey : session.keySet())
+		for (String curKey : session.keySet()) {
 			System.out.println("wrongLogin [" + curKey + "] => " + session.get(curKey));
+		}
 	}
 
 	/**
@@ -224,7 +225,8 @@ public class LoginMainTest {
 		System.out.println("Username for logged user is: " + loggedUser);
 
 		System.out.println("Printing session for logged in user: ");
-		for (String curKey : session.keySet())
+		for (String curKey : session.keySet()) {
 			System.out.println("[" + curKey + "] => " + session.get(curKey));
+		}
 	}
 }
