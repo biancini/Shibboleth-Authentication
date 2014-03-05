@@ -35,6 +35,7 @@ import java.util.Map;
 /**
  * Object representing an HTTP Page opened from a web server.
  * 
+ * @author Andrea Biancini <andrea.biancini@gmail.com>
  * @version 1.0, 06/06/2012
  */
 public class HTTPPage {

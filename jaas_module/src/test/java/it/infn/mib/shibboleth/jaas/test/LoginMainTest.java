@@ -56,6 +56,8 @@ import org.junit.Test;
 /**
  * Test class that executes a login with the Shibboleth auth module.
  * 
+ * @author Andrea Biancini <andrea.biancini@gmail.com>
+ * @author Simon Vocella <voxsim@gmail.com>
  * @version 1.0, 06/06/2012
  */
 public class LoginMainTest {

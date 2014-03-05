@@ -3,6 +3,7 @@ package it.infn.mib.shibboleth.jaas.impl;
 /**
  * Exception class.
  * 
+ * @author Andrea Biancini <andrea.biancini@gmail.com>
  * @version 1.0, 06/06/12
  */
 public class HTTPException extends Exception {

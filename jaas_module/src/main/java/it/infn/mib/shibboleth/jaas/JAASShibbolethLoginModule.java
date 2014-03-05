@@ -62,6 +62,8 @@ import javax.security.auth.spi.LoginModule;
  * If set to true in the login Configuration,
  * debug messages will be output to the error stream, System.err.
  *
+ * @author Andrea Biancini <andrea.biancini@gmail.com>
+ * @author Simon Vocella <voxsim@gmail.com>
  * @version 1.0, 06/06/12
  */
 public class JAASShibbolethLoginModule implements LoginModule {

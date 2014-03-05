@@ -42,7 +42,9 @@ import com.gargoylesoftware.htmlunit.util.NameValuePair;
  * <p>
  * These methods manage authentication, cookies and redirects.
  * 
- *  @version 1.0, 06/06/12
+ * @author Andrea Biancini <andrea.biancini@gmail.com>
+ * @author Simon Vocella <voxsim@gmail.com>
+ * @version 1.1, 05/03/14
  */
 public class HTTPMethods {
 	private boolean debug = false;

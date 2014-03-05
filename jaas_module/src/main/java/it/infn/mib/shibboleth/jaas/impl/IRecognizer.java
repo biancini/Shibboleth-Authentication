@@ -5,6 +5,8 @@ import com.gargoylesoftware.htmlunit.Page;
 /**
  * Object representing an HTTP Page recognizer.
  * 
+ * @author Andrea Biancini <andrea.biancini@gmail.com>
+ * @author Simon Vocella <voxsim@gmail.com>
  * @version 1.0, 05/03/2014
  */
 public interface IRecognizer {

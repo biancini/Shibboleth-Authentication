@@ -15,6 +15,8 @@ import com.gargoylesoftware.htmlunit.html.HtmlTextInput;
 /**
  * Object representing an HTTP Page recognizer for the Shibboleth IdP.
  * 
+ * @author Andrea Biancini <andrea.biancini@gmail.com>
+ * @author Simon Vocella <voxsim@gmail.com>
  * @version 1.0, 05/03/2014
  */
 public class ShibbolethIDP implements IRecognizer {

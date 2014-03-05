@@ -43,6 +43,7 @@ import java.util.Map;
  * on how to achieve this.  Authorization decisions can then be based upon 
  * the Principals associated with a <code>Subject</code>.
  * 
+ * @author Andrea Biancini <andrea.biancini@gmail.com>
  * @version 1.0, 06/06/2012
  * @see java.security.Principal
  * @see javax.security.auth.Subject

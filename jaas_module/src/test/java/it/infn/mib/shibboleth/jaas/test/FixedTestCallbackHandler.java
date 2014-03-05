@@ -41,6 +41,8 @@ import org.junit.Ignore;
 /**
  * Default callback handler that prompts the user to insert the required data.
  * 
+ * @author Andrea Biancini <andrea.biancini@gmail.com>
+ * @author Simon Vocella <voxsim@gmail.com>
  * @version 1.0, 06/06/2012
  */
 @Ignore
