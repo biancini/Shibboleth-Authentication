@@ -29,7 +29,6 @@ package it.infn.mib.shibboleth.jaas.impl;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,13 +36,7 @@ import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.Page;
 import com.gargoylesoftware.htmlunit.TextPage;
 import com.gargoylesoftware.htmlunit.WebClient;
-import com.gargoylesoftware.htmlunit.html.HtmlButton;
-import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
-import com.gargoylesoftware.htmlunit.html.HtmlPasswordInput;
-import com.gargoylesoftware.htmlunit.html.HtmlSelect;
-import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
-import com.gargoylesoftware.htmlunit.html.HtmlTextInput;
 import com.gargoylesoftware.htmlunit.util.NameValuePair;
 
 /**
@@ -56,13 +49,7 @@ import com.gargoylesoftware.htmlunit.util.NameValuePair;
 public class HTTPMethods {
 	public static boolean debug = false;
 	private static List<String> cookies = new ArrayList<String>();
-	
-	private static final String SHIBBOLETH_XPATH_FORM = "//form";
-	private static final String SHIBBOLETH_XPATH_SUBMIT = "//input[@value=\"Select\"]";
-	private static final String SHIBBOLETH_XPATH_BUTTON = "//button";
-	private static final String SHIBBOLETH_ORIGIN_FIELD = "origin";
-	private static final String SHIBBOLETH_USERNAME_FIELD = "j_username";
-	private static final String SHIBBOLETH_PASSWORD_FIELD = "j_password";
+	public static String recognizers = null;
 	
 	/**
 	 * Retrieve an URL managing cookies, following redirects and performing HTTP Basic
@@ -81,21 +68,40 @@ public class HTTPMethods {
 	 * @see it.infn.mib.shibboleth.jaas.impl.HTTPPage
 	 * @see it.infn.mib.shibboleth.jaas.impl.HTTPException
 	 */
-	public static HTTPPage getUrl(String urlToRead, String username, String password, boolean sslCheck, String trustStore, String trustStorePassword) throws HTTPException {
+	public static HTTPPage getUrl(String urlToRead, String username, String password, int selection, boolean sslCheck, String trustStore, String trustStorePassword) throws HTTPException {
 		HTTPPage returnedPage = null;
+		final WebClient webClient = new WebClient();
 		
 		try {
-			final WebClient webClient = new WebClient();
 			webClient.getOptions().setUseInsecureSSL(!sslCheck);
 			Page curWebPage = (Page) webClient.getPage(urlToRead);
 			
+			boolean recognized;
 			while(curWebPage.isHtmlPage()) {
+				recognized = false;
 				HtmlPage htmlCurWebPage = (HtmlPage) (curWebPage);
-				if(htmlCurWebPage.asXml().contains("/dsc/DS")) {
-					curWebPage = shibbolethDS(curWebPage, username, password);
-				} else if (htmlCurWebPage.asXml().contains("j_username") && htmlCurWebPage.asXml().contains("j_password")) {
-					curWebPage = shibbolethIDP(curWebPage, username, password);
+				
+				if(recognizers != null) {
+					String[] clazzes = recognizers.split(",");
+					
+					for(int i=0; i<clazzes.length; i++) {
+						String className = clazzes[i];
+						Class<?> clazz = Class.forName(className);
+						IRecognizer landingPage = (IRecognizer) clazz.newInstance();
+						if(landingPage.isThisUrl(htmlCurWebPage.asXml())) {
+							recognized = true;
+							curWebPage = landingPage.processUrl(htmlCurWebPage, username, password, selection);
+							
+							if(!landingPage.continueTheChain()) {
+								break;
+							}
+						}
+					}
 				} else {
+					throw new HTTPException("Initialize recognizers property");
+				}
+				
+				if(!recognized) {
 					throw new HTTPException("The page has not been recognized");
 				}
 			}
@@ -123,55 +129,42 @@ public class HTTPMethods {
 					returnedPage.addBodyRow(line);
 				}
 			}
-			
-			webClient.closeAllWindows();
-		} catch (FailingHttpStatusCodeException | IOException e) {
+		} catch (FailingHttpStatusCodeException | IOException | IllegalAccessException | InstantiationException | ClassNotFoundException e) {
 			throw new HTTPException("Error during login with Shibboleth.", e);
+		} finally {
+			webClient.closeAllWindows();
 		}
 		
 		return returnedPage;
 	}
 	
-	/** Process Shibboleth DS **/
-	protected static Page shibbolethDS(Page curWebPage, String username, String password) throws HTTPException, IOException {
-		if(!curWebPage.isHtmlPage()) {
-			throw new HTTPException("The page is not a HTML page");
+	public static String[] getChoices(String urlToRead, boolean sslCheck) throws HTTPException {
+		final WebClient webClient = new WebClient();
+		
+		try {
+			webClient.getOptions().setUseInsecureSSL(!sslCheck);
+			HtmlPage curWebPage = webClient.getPage(urlToRead);
+			
+			if(recognizers != null) {
+				String[] clazzes = recognizers.split(",");
+				
+				for(int i=0; i<clazzes.length; i++) {
+					String className = clazzes[i];
+					Class<?> clazz = Class.forName(className);
+					IRecognizer landingPage = (IRecognizer) clazz.newInstance();
+					if(landingPage.isThisUrl(curWebPage.asXml())) {
+						return landingPage.getChoices(curWebPage);
+					}
+				}
+			} else {
+				throw new HTTPException("Initialize recognizers property");
+			}
+		} catch (FailingHttpStatusCodeException | IOException | IllegalAccessException | InstantiationException | ClassNotFoundException e) {
+			throw new HTTPException("Error during login with Shibboleth.", e);
+		} finally {
+			webClient.closeAllWindows();
 		}
 		
-		HtmlPage htmlCurWebPage = (HtmlPage) curWebPage;
-		
-		final HtmlForm form = (HtmlForm) htmlCurWebPage.getByXPath(SHIBBOLETH_XPATH_FORM).get(1);
-		final HtmlSubmitInput submit = (HtmlSubmitInput) form.getFirstByXPath(SHIBBOLETH_XPATH_SUBMIT);
-		final HtmlSelect originField = form.getSelectByName(SHIBBOLETH_ORIGIN_FIELD);
-		
-		originField.setSelectedAttribute(originField.getOptions().get(0), true);
-		curWebPage = submit.click();
-		
-		return curWebPage;
-	}
-	
-	/** Process Shibboleth IDP **/
-	protected static Page shibbolethIDP(Page curWebPage, String username, String password) throws FailingHttpStatusCodeException, MalformedURLException, IOException, HTTPException {
-		if(!curWebPage.isHtmlPage()) {
-			throw new HTTPException("The page is not a HTML page");
-		}
-		
-		HtmlPage htmlCurWebPage = (HtmlPage) curWebPage;
-		
-		final HtmlForm form = (HtmlForm) htmlCurWebPage.getByXPath(SHIBBOLETH_XPATH_FORM).get(0);
-		final HtmlButton button = (HtmlButton) form.getByXPath(SHIBBOLETH_XPATH_BUTTON).get(0);
-		final HtmlTextInput usernameField = form.getInputByName(SHIBBOLETH_USERNAME_FIELD);
-		final HtmlPasswordInput passwordField = form.getInputByName(SHIBBOLETH_PASSWORD_FIELD);
-		
-		usernameField.setValueAttribute(username);
-		passwordField.setValueAttribute(password);
-
-		curWebPage = button.click();
-		
-		if(curWebPage.isHtmlPage()) {
-			throw new HTTPException("The page result is not a Text page");
-		}
-		
-		return curWebPage;
+		throw new HTTPException("The page has not been recognized");
 	}
 }
