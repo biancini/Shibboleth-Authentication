@@ -32,6 +32,7 @@ import it.infn.mib.shibboleth.jaas.test.ws.BackendBindingStub;
 import it.infn.mib.shibboleth.jaas.test.ws.BackendServiceLocator;
 import it.infn.mib.shibboleth.jaas.test.ws.CookieHandler;
 
+import java.net.URL;
 import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
@@ -58,7 +59,6 @@ import org.junit.Test;
  * @version 1.0, 06/06/2012
  */
 public class LoginMainTest {
-
 	private static String loggedUser = null;
 	private static Map<String, String> session = null;
 
@@ -121,35 +121,6 @@ public class LoginMainTest {
 	}
 
 	/**
-	 * Function to call a webservice with Shibboleth authentication
-	 * 
-	 * @param args
-	 *            No arguments to be passed
-	 * @throws LoginException
-	 *             when the login has an exception
-	 * @throws RemoteException
-	 *             when there is an error in calling webservice
-	 * 
-	 * 
-	@Test
-	public void callWebservice() throws LoginException, RemoteException {
-		login();
-		System.out
-				.println("Trying to call webservice using obtained credentials.");
-
-		String wsEndpoint = "https://cloud-mi-03.mib.infn.it/secure/webservice.php";
-		AxisProperties.setProperty("axis.socketSecureFactory",
-				"org.apache.axis.components.net.SunFakeTrustSocketFactory");
-
-		Map<String, String> cookies = new HashMap<String, String>();
-		cookies.put("_shibsession_" + session.get("Shib-Session-Unique"),
-				session.get("Shib-Session-ID"));
-
-		BackendPort service = getCookieTokenBinding(wsEndpoint, cookies);
-		System.out.println(service.oncall(loggedUser));
-	}*/
-
-	/**
 	 * Function to login a user.
 	 * 
 	 * @param args
@@ -159,13 +130,13 @@ public class LoginMainTest {
 	 */
 	@Test
 	public void login() throws LoginException {
+		final URL jaasFile = getClass().getResource("/shibboleth_jaas.config");
 		System.setProperty(
 				"java.security.auth.login.config",
-				"/home/voxsim/projects/Shibboleth-Authentication/jaas_module/shibboleth_jaas.config");
+				jaasFile.getPath());
 		LoginContext lc = new LoginContext("Shibboleth",
-				new FixedTestCallbackHandler("simon", "ciaosimon"));
+				new FixedTestCallbackHandler("simon", "ciaosimon", 0));
 		lc.login();
-		System.out.println("User logged in successfully.");
 
 		// Prints the session values for the logged in user
 		for (Principal curPrincipal : lc.getSubject().getPrincipals()) {
@@ -193,13 +164,13 @@ public class LoginMainTest {
 	 */
 	@Test(expected = FailedLoginException.class)
 	public void wrongLogin() throws LoginException {
+		final URL jaasFile = getClass().getResource("/shibboleth_jaas.config");
 		System.setProperty(
 				"java.security.auth.login.config",
-				"/home/voxsim/projects/Shibboleth-Authentication/jaas_module/shibboleth_jaas.config");
+				jaasFile.getPath());
 		LoginContext lc = new LoginContext("Shibboleth",
-				new FixedTestCallbackHandler("simon", "ciaosimon2"));
+				new FixedTestCallbackHandler("simon", "ciaosimon2", 0));
 		lc.login();
-		System.out.println("User logged in successfully.");
 
 		// Prints the session values for the logged in user
 		for (Principal curPrincipal : lc.getSubject().getPrincipals()) {
@@ -209,12 +180,12 @@ public class LoginMainTest {
 			}
 		}
 
-		System.out.println("User logged in successfully.");
-		System.out.println("Username for logged user is: " + loggedUser);
+		System.out.println("wrongLogin User logged in successfully.");
+		System.out.println("wrongLogin Username for logged user is: " + loggedUser);
 
-		System.out.println("Printing session for logged in user: ");
+		System.out.println("wrongLogin Printing session for logged in user: ");
 		for (String curKey : session.keySet())
-			System.out.println("[" + curKey + "] => " + session.get(curKey));
+			System.out.println("wrongLogin [" + curKey + "] => " + session.get(curKey));
 	}
 
 	/**
@@ -234,8 +205,10 @@ public class LoginMainTest {
 		// so the login module may translate the dash with an underline symbol.
 		// Here do the opposite translation (replaceAll instructions).
 		loggedUser = System.getProperty(sessUsername.replaceAll("-", "_"));
-		String shibUnique = System.getProperty("Shib-Session-Unique".replaceAll("-", "_"));
-		String shibId = System.getProperty("Shib-Session-ID".replaceAll("-", "_"));
+		String shibUnique = System.getProperty("Shib-Session-Unique"
+				.replaceAll("-", "_"));
+		String shibId = System.getProperty("Shib-Session-ID".replaceAll("-",
+				"_"));
 
 		if (loggedUser == null || shibUnique == null || shibId == null) {
 			System.err

@@ -32,13 +32,15 @@ import it.infn.mib.shibboleth.jaas.impl.HTTPMethods;
 import it.infn.mib.shibboleth.jaas.impl.HTTPPage;
 
 import java.net.HttpURLConnection;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.lang.Boolean;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.ChoiceCallback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
@@ -83,6 +85,9 @@ public class JAASShibbolethLoginModule implements LoginModule {
 	private boolean succeeded = false;
 	private boolean commitSucceeded = false;
 	private HTTPPage page = null;
+	
+	private Integer selection = null;
+	private String recognizers = null;
 
 	/**
 	 * Initialize this <code>LoginModule</code>.
@@ -118,6 +123,8 @@ public class JAASShibbolethLoginModule implements LoginModule {
 		if (trustStore.equals("")) trustStore = null;
 		trustStorePassword = (String) options.get("truststore_password");
 		if (trustStorePassword.equals("")) trustStorePassword = null;
+		recognizers = (String) options.get("recognizers");
+		if (recognizers.equals("")) recognizers = null;
 	}
 
 	/**
@@ -137,22 +144,39 @@ public class JAASShibbolethLoginModule implements LoginModule {
 		// prompt for a user name and password
 		if (callbackHandler == null)
 		    throw new LoginException("Error: no CallbackHandler available to garner authentication information from the user");
+		
+		HTTPMethods.recognizers = recognizers;
 
-		Callback[] callbacks = new Callback[2];
-		callbacks[0] = new NameCallback("Username: ");
-		callbacks[1] = new PasswordCallback("Password: ", false);
-	 
+		List<Callback> callbacks = new ArrayList<Callback>();
+		callbacks.add(new NameCallback("Username: "));
+		callbacks.add(new PasswordCallback("Password: ", false));
+		
+		String[] choices = null;
 		try {
-		    callbackHandler.handle(callbacks);
-		    username = ((NameCallback)callbacks[0]).getName();
-		    char[] tmpPassword = ((PasswordCallback)callbacks[1]).getPassword();
+			choices = HTTPMethods.getChoices(url, sslCheck);
+			if(choices != null) {
+				callbacks.add(new ChoiceCallback("Choice: ", choices, 0, false));
+			}
+		} catch (HTTPException e1) {
+			throw new FailedLoginException("Unable to recognize the page.");
+		}
+		
+		try {
+		    callbackHandler.handle(callbacks.toArray(new Callback[callbacks.size()]));
+		    username = ((NameCallback)callbacks.get(0)).getName();
+		    char[] tmpPassword = ((PasswordCallback)callbacks.get(1)).getPassword();
 		    if (tmpPassword == null) {
 		    	// treat a NULL password as an empty password
 		    	tmpPassword = new char[0];
 		    }
 		    password = new char[tmpPassword.length];
 		    System.arraycopy(tmpPassword, 0, password, 0, tmpPassword.length);
-		    ((PasswordCallback)callbacks[1]).clearPassword();
+		    ((PasswordCallback)callbacks.get(1)).clearPassword();
+		    
+		    if(choices != null) {
+		    	int[] selectedIndexes = ((ChoiceCallback)callbacks.get(2)).getSelectedIndexes();
+		    	selection = selectedIndexes[0];
+		    }
 		} catch (java.io.IOException ioe) {
 		    throw new LoginException(ioe.toString());
 		} catch (UnsupportedCallbackException uce) {
@@ -168,7 +192,7 @@ public class JAASShibbolethLoginModule implements LoginModule {
 		}
 
 		try {
-			page = HTTPMethods.getUrl(url, username, new String(password), sslCheck, trustStore, trustStorePassword);
+			page = HTTPMethods.getUrl(url, username, new String(password), selection, sslCheck, trustStore, trustStorePassword);
 			if (page.getReturnCode() == HttpURLConnection.HTTP_OK) {
 				for (String curRow : page.getBodyRows()) {
 					if (curRow.startsWith("authenticated") && new Boolean(curRow.replace("authenticated=", "").trim()).booleanValue()) {
