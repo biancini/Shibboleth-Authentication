@@ -95,12 +95,12 @@ public class HTTPMethods {
 				
 				if (recognizers != null) {
 					for (Class<?> clazz : recognizers) {
-						IRecognizer landingPage = (IRecognizer) clazz.newInstance();
-						if (landingPage.isThisUrl(htmlCurWebPage.asXml())) {
+						IRecognizer recognizer = (IRecognizer) clazz.newInstance();
+						if (recognizer.isThisUrl(htmlCurWebPage.asXml())) {
 							recognized = true;
-							curWebPage = landingPage.processUrl(htmlCurWebPage, username, password, selection);
+							curWebPage = recognizer.processUrl(htmlCurWebPage, username, password, selection);
 							
-							if (!landingPage.continueTheChain()) {
+							if (!recognizer.continueTheChain()) {
 								break;
 							}
 						}
