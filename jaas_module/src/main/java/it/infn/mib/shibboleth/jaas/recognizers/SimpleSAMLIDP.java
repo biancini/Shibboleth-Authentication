@@ -22,7 +22,7 @@ import com.gargoylesoftware.htmlunit.html.HtmlTextInput;
 public class SimpleSAMLIDP implements IRecognizer {
 	
 	private static final String SHIBBOLETH_XPATH_FORM = "//form";
-	private static final String SHIBBOLETH_XPATH_SUBMIT = "//input[@value=\"Login\"]";
+	private static final String SHIBBOLETH_XPATH_SUBMIT = ".//input[@type=\"submit\"]";
 	private static final String SHIBBOLETH_USERNAME_FIELD = "username";
 	private static final String SHIBBOLETH_PASSWORD_FIELD = "password";
 
@@ -43,8 +43,8 @@ public class SimpleSAMLIDP implements IRecognizer {
 		
 		HtmlPage htmlCurWebPage = (HtmlPage) curWebPage;
 		
-		final HtmlForm form = (HtmlForm) htmlCurWebPage.getByXPath(SHIBBOLETH_XPATH_FORM).get(0);
-		final HtmlSubmitInput submit = (HtmlSubmitInput) form.getByXPath(SHIBBOLETH_XPATH_SUBMIT).get(0);
+		final HtmlForm form = (HtmlForm) htmlCurWebPage.getFirstByXPath(SHIBBOLETH_XPATH_FORM);
+		final HtmlSubmitInput submit = (HtmlSubmitInput) form.getFirstByXPath(SHIBBOLETH_XPATH_SUBMIT);
 		final HtmlTextInput usernameField = form.getInputByName(SHIBBOLETH_USERNAME_FIELD);
 		final HtmlPasswordInput passwordField = form.getInputByName(SHIBBOLETH_PASSWORD_FIELD);
 		
@@ -57,7 +57,7 @@ public class SimpleSAMLIDP implements IRecognizer {
 			throw new HTTPException("Error during page processing", e);
 		}
 		
-		if(curWebPage.isHtmlPage()) {
+		if (curWebPage.isHtmlPage()) {
 			throw new HTTPException("The page result is not a Text page");
 		}
 		

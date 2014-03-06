@@ -22,15 +22,14 @@ import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
 public class ShibbolethDS implements IRecognizer {
 	
 	private static final String SHIBBOLETH_XPATH_FORM = "//form";
-	private static final String SHIBBOLETH_XPATH_SUBMIT = "//input[@value=\"Select\"]";
+	private static final String SHIBBOLETH_XPATH_SUBMIT = ".//input[@type=\"submit\"]";
 	private static final String SHIBBOLETH_ORIGIN_FIELD = "origin";
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public boolean isThisUrl(String htmlCurWebPageText) {
-		// TODO: this verification mechanism for Shibboleth DS is too weak...
-		return htmlCurWebPageText.contains("/dsc/DS");
+		return htmlCurWebPageText.contains("action=\"/dsc/DS\"");
 	}
 
 	/**

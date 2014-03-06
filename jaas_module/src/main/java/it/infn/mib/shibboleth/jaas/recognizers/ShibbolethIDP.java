@@ -43,8 +43,8 @@ public class ShibbolethIDP implements IRecognizer {
 		
 		HtmlPage htmlCurWebPage = (HtmlPage) curWebPage;
 		
-		final HtmlForm form = (HtmlForm) htmlCurWebPage.getByXPath(SHIBBOLETH_XPATH_FORM).get(0);
-		final HtmlButton button = (HtmlButton) form.getByXPath(SHIBBOLETH_XPATH_BUTTON).get(0);
+		final HtmlForm form = (HtmlForm) htmlCurWebPage.getFirstByXPath(SHIBBOLETH_XPATH_FORM);
+		final HtmlButton button = (HtmlButton) form.getFirstByXPath(SHIBBOLETH_XPATH_BUTTON);
 		final HtmlTextInput usernameField = form.getInputByName(SHIBBOLETH_USERNAME_FIELD);
 		final HtmlPasswordInput passwordField = form.getInputByName(SHIBBOLETH_PASSWORD_FIELD);
 		
@@ -57,7 +57,7 @@ public class ShibbolethIDP implements IRecognizer {
 			throw new HTTPException("Error during page processing", e);
 		}
 		
-		if(curWebPage.isHtmlPage()) {
+		if (curWebPage.isHtmlPage()) {
 			throw new HTTPException("The page result is not a Text page");
 		}
 		

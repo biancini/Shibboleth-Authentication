@@ -131,13 +131,13 @@ public class LoginMainTest {
 	 *             When the login has an exception
 	 */
 	@Test
-	public void loginWithShibbolethIDP() throws LoginException {
+	public void loginWithSimpleShibbolethAMLIDP() throws LoginException {
 		final URL jaasFile = getClass().getResource("/shibboleth_jaas.config");
 		System.setProperty(
 				"java.security.auth.login.config",
 				jaasFile.getPath());
 		LoginContext lc = new LoginContext("Shibboleth",
-				new FixedTestCallbackHandler("simon", "ciaosimon", 0));
+				new FixedTestCallbackHandler("simon", "ciaosimon", 14));
 		lc.login();
 
 		// Prints the session values for the logged in user
@@ -171,7 +171,7 @@ public class LoginMainTest {
 				"java.security.auth.login.config",
 				jaasFile.getPath());
 		LoginContext lc = new LoginContext("Shibboleth",
-				new FixedTestCallbackHandler("simon", "ciaosimon2", 0));
+				new FixedTestCallbackHandler("simon", "ciaosimon2", 14));
 		lc.login();
 
 		// Prints the session values for the logged in user
@@ -206,7 +206,7 @@ public class LoginMainTest {
 				"java.security.auth.login.config",
 				jaasFile.getPath());
 		LoginContext lc = new LoginContext("Shibboleth",
-				new FixedTestCallbackHandler("simon", "ciaosimon", 1));
+				new FixedTestCallbackHandler("simon", "ciaosimon", 15));
 		lc.login();
 
 		// Prints the session values for the logged in user
@@ -240,7 +240,7 @@ public class LoginMainTest {
 				"java.security.auth.login.config",
 				jaasFile.getPath());
 		LoginContext lc = new LoginContext("Shibboleth",
-				new FixedTestCallbackHandler("simon", "ciaosimon2", 1));
+				new FixedTestCallbackHandler("simon", "ciaosimon2", 15));
 		lc.login();
 
 		// Prints the session values for the logged in user
