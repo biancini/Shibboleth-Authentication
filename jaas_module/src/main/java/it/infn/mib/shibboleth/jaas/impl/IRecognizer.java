@@ -31,9 +31,9 @@ public interface IRecognizer {
 	public Page processUrl(Page curWebPage, String username, String password, Integer selection) throws HTTPException;
 	
 	/**
-	 * Function that indicates wether the recognizer chain must be continued or broken.
+	 * Function that indicates whether the recognizer chain must be continued or broken.
 	 * 
-	 * @return true or false indicating wether the recognizer chain must be continuer or not
+	 * @return true or false indicating whether the recognizer chain must be continuer or not
 	 */
 	public boolean continueTheChain();
 	
@@ -41,7 +41,7 @@ public interface IRecognizer {
 	 * Function that provides the choices available to the user to choose from WAYF/DS, if available
 	 * 
 	 * @param curWebPage the current webpage for the WAYF/DS
-	 * @return an array of String containing IdP names for the user chooice
+	 * @return an array of String containing IdP names for the user choice
 	 */
 	public String[] getChoices(Page curWebPage);
 }
