@@ -58,7 +58,7 @@ import org.junit.Test;
  * 
  * @author Andrea Biancini <andrea.biancini@gmail.com>
  * @author Simon Vocella <voxsim@gmail.com>
- * @version 1.0, 06/06/2012
+ * @version 1.0, 07/03/2014
  */
 public class LoginMainTest {
 	private static String loggedUser = null;
@@ -182,13 +182,7 @@ public class LoginMainTest {
 			}
 		}
 
-		System.out.println("wrongLogin User logged in successfully.");
-		System.out.println("wrongLogin Username for logged user is: " + loggedUser);
-
-		System.out.println("wrongLogin Printing session for logged in user: ");
-		for (String curKey : session.keySet()) {
-			System.out.println("wrongLogin [" + curKey + "] => " + session.get(curKey));
-		}
+		System.out.println("Login User did not log in.");
 	}
 	
 	/**
@@ -251,13 +245,7 @@ public class LoginMainTest {
 			}
 		}
 
-		System.out.println("wrongLogin User logged in successfully.");
-		System.out.println("wrongLogin Username for logged user is: " + loggedUser);
-
-		System.out.println("wrongLogin Printing session for logged in user: ");
-		for (String curKey : session.keySet()) {
-			System.out.println("wrongLogin [" + curKey + "] => " + session.get(curKey));
-		}
+		System.out.println("Login User did not log in.");
 	}
 
 	/**
