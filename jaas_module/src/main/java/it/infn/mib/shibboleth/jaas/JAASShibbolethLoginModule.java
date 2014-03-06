@@ -219,7 +219,8 @@ public class JAASShibbolethLoginModule implements LoginModule {
 			throw new HTTPException("Returned page has return code = " + page.getReturnCode());
 		}
 		catch (HTTPException e) {
-			if (debug) System.err.println(e.toString());
+			//if (debug) System.err.println(e.toString());
+			System.err.println(e.toString());
 			// authentication failed -- clean out state
 			if (debug) System.err.println("[SampleLoginModule] auth.entication failed");
 			succeeded = false;

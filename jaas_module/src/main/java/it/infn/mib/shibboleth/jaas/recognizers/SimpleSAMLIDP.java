@@ -6,25 +6,25 @@ import it.infn.mib.shibboleth.jaas.impl.IRecognizer;
 import java.io.IOException;
 
 import com.gargoylesoftware.htmlunit.Page;
-import com.gargoylesoftware.htmlunit.html.HtmlButton;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.html.HtmlPasswordInput;
+import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
 import com.gargoylesoftware.htmlunit.html.HtmlTextInput;
 
 /**
- * Object representing an HTTP Page recognizer for the Shibboleth IdP.
+ * Object representing an HTTP Page recognizer for the SimpleSAML IdP.
  * 
  * @author Andrea Biancini <andrea.biancini@gmail.com>
  * @author Simon Vocella <voxsim@gmail.com>
  * @version 1.0, 05/03/2014
  */
-public class ShibbolethIDP implements IRecognizer {
+public class SimpleSAMLIDP implements IRecognizer {
 	
 	private static final String SHIBBOLETH_XPATH_FORM = "//form";
-	private static final String SHIBBOLETH_XPATH_BUTTON = "//button";
-	private static final String SHIBBOLETH_USERNAME_FIELD = "j_username";
-	private static final String SHIBBOLETH_PASSWORD_FIELD = "j_password";
+	private static final String SHIBBOLETH_XPATH_SUBMIT = "//input[@value=\"Login\"]";
+	private static final String SHIBBOLETH_USERNAME_FIELD = "username";
+	private static final String SHIBBOLETH_PASSWORD_FIELD = "password";
 
 	/**
 	 * {@inheritDoc}
@@ -44,7 +44,7 @@ public class ShibbolethIDP implements IRecognizer {
 		HtmlPage htmlCurWebPage = (HtmlPage) curWebPage;
 		
 		final HtmlForm form = (HtmlForm) htmlCurWebPage.getByXPath(SHIBBOLETH_XPATH_FORM).get(0);
-		final HtmlButton button = (HtmlButton) form.getByXPath(SHIBBOLETH_XPATH_BUTTON).get(0);
+		final HtmlSubmitInput submit = (HtmlSubmitInput) form.getByXPath(SHIBBOLETH_XPATH_SUBMIT).get(0);
 		final HtmlTextInput usernameField = form.getInputByName(SHIBBOLETH_USERNAME_FIELD);
 		final HtmlPasswordInput passwordField = form.getInputByName(SHIBBOLETH_PASSWORD_FIELD);
 		
@@ -52,7 +52,7 @@ public class ShibbolethIDP implements IRecognizer {
 		passwordField.setValueAttribute(password);
 
 		try {
-			curWebPage = button.click();
+			curWebPage = submit.click();
 		} catch (IOException e) {
 			throw new HTTPException("Error during page processing", e);
 		}

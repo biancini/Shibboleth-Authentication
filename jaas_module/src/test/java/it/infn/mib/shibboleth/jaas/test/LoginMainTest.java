@@ -131,7 +131,7 @@ public class LoginMainTest {
 	 *             When the login has an exception
 	 */
 	@Test
-	public void login() throws LoginException {
+	public void loginWithShibbolethIDP() throws LoginException {
 		final URL jaasFile = getClass().getResource("/shibboleth_jaas.config");
 		System.setProperty(
 				"java.security.auth.login.config",
@@ -165,13 +165,82 @@ public class LoginMainTest {
 	 *             When the login has an exception
 	 */
 	@Test(expected = FailedLoginException.class)
-	public void wrongLogin() throws LoginException {
+	public void wrongLoginWithShibbolethIDP() throws LoginException {
 		final URL jaasFile = getClass().getResource("/shibboleth_jaas.config");
 		System.setProperty(
 				"java.security.auth.login.config",
 				jaasFile.getPath());
 		LoginContext lc = new LoginContext("Shibboleth",
 				new FixedTestCallbackHandler("simon", "ciaosimon2", 0));
+		lc.login();
+
+		// Prints the session values for the logged in user
+		for (Principal curPrincipal : lc.getSubject().getPrincipals()) {
+			if (curPrincipal instanceof ShibbolethPrincipal) {
+				loggedUser = ((ShibbolethPrincipal) curPrincipal).getName();
+				session = ((ShibbolethPrincipal) curPrincipal).getSession();
+			}
+		}
+
+		System.out.println("wrongLogin User logged in successfully.");
+		System.out.println("wrongLogin Username for logged user is: " + loggedUser);
+
+		System.out.println("wrongLogin Printing session for logged in user: ");
+		for (String curKey : session.keySet()) {
+			System.out.println("wrongLogin [" + curKey + "] => " + session.get(curKey));
+		}
+	}
+	
+	/**
+	 * Function to login a user.
+	 * 
+	 * @param args
+	 *            No arguments to be passed
+	 * @throws LoginException
+	 *             When the login has an exception
+	 */
+	@Test
+	public void loginWithSimpleSAMLIDP() throws LoginException {
+		final URL jaasFile = getClass().getResource("/shibboleth_jaas.config");
+		System.setProperty(
+				"java.security.auth.login.config",
+				jaasFile.getPath());
+		LoginContext lc = new LoginContext("Shibboleth",
+				new FixedTestCallbackHandler("simon", "ciaosimon", 1));
+		lc.login();
+
+		// Prints the session values for the logged in user
+		for (Principal curPrincipal : lc.getSubject().getPrincipals()) {
+			if (curPrincipal instanceof ShibbolethPrincipal) {
+				loggedUser = ((ShibbolethPrincipal) curPrincipal).getName();
+				session = ((ShibbolethPrincipal) curPrincipal).getSession();
+			}
+		}
+
+		System.out.println("User logged in successfully.");
+		System.out.println("Username for logged user is: " + loggedUser);
+
+		System.out.println("Printing session for logged in user: ");
+		for (String curKey : session.keySet())
+			System.out.println("[" + curKey + "] => " + session.get(curKey));
+	}
+
+	/**
+	 * Function to login a user.
+	 * 
+	 * @param args
+	 *            No arguments to be passed
+	 * @throws LoginException
+	 *             When the login has an exception
+	 */
+	@Test(expected = FailedLoginException.class)
+	public void wrongLoginWithSimpleSAMLIDP() throws LoginException {
+		final URL jaasFile = getClass().getResource("/shibboleth_jaas.config");
+		System.setProperty(
+				"java.security.auth.login.config",
+				jaasFile.getPath());
+		LoginContext lc = new LoginContext("Shibboleth",
+				new FixedTestCallbackHandler("simon", "ciaosimon2", 1));
 		lc.login();
 
 		// Prints the session values for the logged in user
