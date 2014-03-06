@@ -37,6 +37,7 @@ public class ShibbolethDS implements IRecognizer {
 	 * {@inheritDoc}
 	 */
 	public Page processUrl(Page curWebPage, String username, String password, Integer selection) throws HTTPException {
+		// TODO: This method only works when the DS is configured with provideListOfList="false"
 		if(!curWebPage.isHtmlPage()) {
 			throw new HTTPException("The page is not a HTML page");
 		}
