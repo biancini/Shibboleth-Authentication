@@ -131,7 +131,7 @@ public class LoginMainTest {
 	 *             When the login has an exception
 	 */
 	@Test
-	public void loginWithSimpleShibbolethAMLIDP() throws LoginException {
+	public void loginWithShibbolethIDP() throws LoginException {
 		final URL jaasFile = getClass().getResource("/shibboleth_jaas.config");
 		System.setProperty(
 				"java.security.auth.login.config",

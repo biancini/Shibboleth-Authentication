@@ -48,6 +48,8 @@ import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
 import javax.security.auth.spi.LoginModule;
 
+import org.apache.log4j.Logger;
+
 /**
  * <p> This sample LoginModule authenticates users with a password.
  * 
@@ -58,22 +60,16 @@ import javax.security.auth.spi.LoginModule;
  * are parsed and placed into a session HashMap to be available to
  * the user.
  *
- * <p> This LoginModule recognizes the debug option.
- * If set to true in the login Configuration,
- * debug messages will be output to the error stream, System.err.
- *
  * @author Andrea Biancini <andrea.biancini@gmail.com>
  * @author Simon Vocella <voxsim@gmail.com>
  * @version 1.0, 06/06/12
  */
 public class JAASShibbolethLoginModule implements LoginModule {
+	private static Logger logger = Logger.getLogger(JAASShibbolethLoginModule.class);
 	
 	private Subject subject = null;
 	private CallbackHandler callbackHandler = null;
-	private boolean debug = false;
 	
-	//private boolean useFirstPass = false;
-	//private boolean tryFirstPass = false;
 	private String url = null;
 	private boolean sslCheck = false;
 	private String trustStore = null;
@@ -90,7 +86,6 @@ public class JAASShibbolethLoginModule implements LoginModule {
 	
 	private Integer selection = null;
 	private List<Class<?>> recognizers = null;
-	
 
 	/**
 	 * Initialize this <code>LoginModule</code>.
@@ -113,16 +108,17 @@ public class JAASShibbolethLoginModule implements LoginModule {
 		this.subject = subject;
 		this.callbackHandler = callbackHandler;
 		
-		// initialize any configured options
-		debug = "true".equalsIgnoreCase((String) options.get("debug"));
-		
-		//tryFirstPass = options.get("try_first_pass") != null;
-		//useFirstPass = options.get("use_first_pass") != null;
 		url = (String) options.get("url");
+		
+		if(url == null || url.equals(""))
+			new RuntimeException("Application could not be initialized.  Application url could not be resolved.");
+		
 		sessUsername = (String) options.get("sess_username");
 		sslCheck = "true".equalsIgnoreCase((String) options.get("sslcheck"));
+		
 		trustStore = (String) options.get("truststore");
 		if (trustStore.equals("")) trustStore = null;
+		
 		trustStorePassword = (String) options.get("truststore_password");
 		if (trustStorePassword.equals("")) trustStorePassword = null;
 		
@@ -134,7 +130,7 @@ public class JAASShibbolethLoginModule implements LoginModule {
 				try {
 					recognizers.add(Class.forName(clazz));
 				} catch (ClassNotFoundException e) {
-					// Do nothing
+					new RuntimeException("Application could not be initialized.  Application recognizers could not be resolved.");
 				}
 			}
 		}
@@ -158,7 +154,7 @@ public class JAASShibbolethLoginModule implements LoginModule {
 		if (callbackHandler == null)
 		    throw new LoginException("Error: no CallbackHandler available to garner authentication information from the user");
 		
-		HTTPMethods httpMethods = new HTTPMethods(debug, recognizers, sslCheck, trustStore, trustStorePassword);
+		HTTPMethods httpMethods = new HTTPMethods(recognizers, sslCheck, trustStore, trustStorePassword);
 		List<Callback> callbacks = new ArrayList<Callback>();
 		callbacks.add(new NameCallback("Username: "));
 		callbacks.add(new PasswordCallback("Password: ", false));
@@ -169,7 +165,8 @@ public class JAASShibbolethLoginModule implements LoginModule {
 			if(choices != null) {
 				callbacks.add(new ChoiceCallback("Choice: ", choices, 0, false));
 			}
-		} catch (HTTPException e1) {
+		} catch (HTTPException e) {
+			logger.error("Unable to recognize the page.", e);
 			throw new FailedLoginException("Unable to recognize the page.");
 		}
 		
@@ -195,13 +192,7 @@ public class JAASShibbolethLoginModule implements LoginModule {
 		    throw new LoginException("Error: " + uce.getCallback().toString() + " not available to garner authentication information from the user");
 		}
 
-		// print debugging information
-		if (debug) {
-		    System.err.println("[SampleLoginModule] user entered user name: " + username);
-		    System.err.print("[SampleLoginModule] user entered password: ");
-		    for (int i = 0; i < password.length; i++) System.err.print(password[i]);
-		    System.err.println();
-		}
+		logger.debug("[SampleLoginModule] user entered user name: " + username);
 
 		try {
 			page = httpMethods.getUrl(url, username, new String(password), selection);
@@ -209,7 +200,7 @@ public class JAASShibbolethLoginModule implements LoginModule {
 				for (String curRow : page.getBodyRows()) {
 					if (curRow.startsWith("authenticated") && new Boolean(curRow.replace("authenticated=", "").trim()).booleanValue()) {
 						// authentication succeeded!!!
-						if (debug) System.err.println("[SampleLoginModule] authentication succeeded");
+						logger.debug("[SampleLoginModule] authentication succeeded");
 						succeeded = true;
 						return true;
 					}
@@ -219,10 +210,10 @@ public class JAASShibbolethLoginModule implements LoginModule {
 			throw new HTTPException("Returned page has return code = " + page.getReturnCode());
 		}
 		catch (HTTPException e) {
-			//if (debug) System.err.println(e.toString());
-			System.err.println(e.toString());
+			logger.error(e.getMessage(), e);
+			
 			// authentication failed -- clean out state
-			if (debug) System.err.println("[SampleLoginModule] auth.entication failed");
+			logger.debug("[SampleLoginModule] auth.entication failed");
 			succeeded = false;
 			username = null;
 		    
@@ -332,6 +323,10 @@ public class JAASShibbolethLoginModule implements LoginModule {
 		    	}
 		    }
 			
+			logger.debug("[SampleLoginModule] pre ShibbolethPrincipal");
+			logger.debug("[SampleLoginModule] username: "+username);
+			logger.debug("[SampleLoginModule] sessUsername: "+sessUsername);
+			
 		    // add a Principal (authenticated identity) to the Subject
 			if (sessUsername != null && !sessUsername.equals("")) {
 				userPrincipal = new ShibbolethPrincipal(session.get(sessUsername));
@@ -345,7 +340,7 @@ public class JAASShibbolethLoginModule implements LoginModule {
 		    if (!subject.getPrincipals().contains(userPrincipal))
 			subject.getPrincipals().add(userPrincipal);
 
-		    if (debug) System.err.println("[SampleLoginModule] added ShibbolethPrincipal to Subject.");
+		    logger.debug("[SampleLoginModule] added ShibbolethPrincipal to Subject.");
 
 		    // in any case, clean out state
 		    username = null;

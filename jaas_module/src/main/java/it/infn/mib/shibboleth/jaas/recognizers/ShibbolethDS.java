@@ -5,6 +5,8 @@ import it.infn.mib.shibboleth.jaas.impl.IRecognizer;
 
 import java.io.IOException;
 
+import org.apache.log4j.Logger;
+
 import com.gargoylesoftware.htmlunit.Page;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlOption;
@@ -20,6 +22,7 @@ import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
  * @version 1.0, 05/03/2014
  */
 public class ShibbolethDS implements IRecognizer {
+	private static Logger logger = Logger.getLogger(ShibbolethDS.class);
 	
 	private static final String SHIBBOLETH_XPATH_FORM = "//form";
 	private static final String SHIBBOLETH_XPATH_SUBMIT = ".//input[@type=\"submit\"]";
@@ -34,8 +37,9 @@ public class ShibbolethDS implements IRecognizer {
 
 	/**
 	 * {@inheritDoc}
+	 * @throws IOException 
 	 */
-	public Page processUrl(Page curWebPage, String username, String password, Integer selection) throws HTTPException {
+	public Page processUrl(Page curWebPage, String username, String password, Integer selection) throws HTTPException, IOException {
 		// TODO: This method only works when the DS is configured with provideListOfList="false"
 		if(!curWebPage.isHtmlPage()) {
 			throw new HTTPException("The page is not a HTML page");
@@ -48,11 +52,7 @@ public class ShibbolethDS implements IRecognizer {
 		final HtmlSelect originField = form.getSelectByName(SHIBBOLETH_ORIGIN_FIELD);
 		
 		originField.setSelectedAttribute(originField.getOptions().get(selection), true);
-		try {
-			curWebPage = submit.click();
-		} catch (IOException e) {
-			throw new HTTPException("Error during page processing", e);
-		}
+		curWebPage = submit.click();
 		
 		return curWebPage;
 	}
@@ -70,14 +70,15 @@ public class ShibbolethDS implements IRecognizer {
 	public String[] getChoices(Page curWebPage) {
 		HtmlPage htmlCurWebPage = (HtmlPage) curWebPage;
 		
+		logger.debug("htmlCurWebPage: "+htmlCurWebPage.asXml());
+		
 		final HtmlForm form = (HtmlForm) htmlCurWebPage.getByXPath(SHIBBOLETH_XPATH_FORM).get(1);
 		final HtmlSelect originField = form.getSelectByName(SHIBBOLETH_ORIGIN_FIELD);
 		
 		String[] choices = new String[originField.getOptions().size()];
-		int i = 0;
-		for(HtmlOption option : originField.getOptions()) {
-			choices[i] = option.getValueAttribute();
-			i++;
+		for(int i=0; i<originField.getOptionSize(); i++) {
+			HtmlOption option = originField.getOption(i);
+			choices[i] = option.getText();
 		}
 		
 		return choices;
