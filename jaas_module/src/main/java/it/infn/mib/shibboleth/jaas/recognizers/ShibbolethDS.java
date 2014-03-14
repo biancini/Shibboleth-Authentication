@@ -29,7 +29,7 @@ public class ShibbolethDS implements IRecognizer {
 	 * {@inheritDoc}
 	 */
 	public boolean isThisUrl(String htmlCurWebPageText) {
-		return htmlCurWebPageText.contains("action=\"/dsc/DS\"");
+		return htmlCurWebPageText.contains("action=\"/discovery/DS\"");
 	}
 
 	/**
@@ -43,7 +43,7 @@ public class ShibbolethDS implements IRecognizer {
 		
 		HtmlPage htmlCurWebPage = (HtmlPage) curWebPage;
 		
-		final HtmlForm form = (HtmlForm) htmlCurWebPage.getByXPath(SHIBBOLETH_XPATH_FORM).get(1);
+		final HtmlForm form = (HtmlForm) htmlCurWebPage.getByXPath(SHIBBOLETH_XPATH_FORM).get(0);
 		final HtmlSubmitInput submit = (HtmlSubmitInput) form.getFirstByXPath(SHIBBOLETH_XPATH_SUBMIT);
 		final HtmlSelect originField = form.getSelectByName(SHIBBOLETH_ORIGIN_FIELD);
 		
@@ -70,14 +70,13 @@ public class ShibbolethDS implements IRecognizer {
 	public String[] getChoices(Page curWebPage) {
 		HtmlPage htmlCurWebPage = (HtmlPage) curWebPage;
 		
-		final HtmlForm form = (HtmlForm) htmlCurWebPage.getByXPath(SHIBBOLETH_XPATH_FORM).get(1);
+		final HtmlForm form = (HtmlForm) htmlCurWebPage.getByXPath(SHIBBOLETH_XPATH_FORM).get(0);
 		final HtmlSelect originField = form.getSelectByName(SHIBBOLETH_ORIGIN_FIELD);
 		
 		String[] choices = new String[originField.getOptions().size()];
-		int i = 0;
-		for(HtmlOption option : originField.getOptions()) {
-			choices[i] = option.getValueAttribute();
-			i++;
+		for(int i=0; i<originField.getOptionSize(); i++) {
+			HtmlOption option = originField.getOption(i);
+			choices[i] = option.getText();
 		}
 		
 		return choices;

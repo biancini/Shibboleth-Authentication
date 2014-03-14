@@ -31,6 +31,8 @@ import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.log4j.Logger;
+
 import com.gargoylesoftware.htmlunit.Page;
 import com.gargoylesoftware.htmlunit.TextPage;
 import com.gargoylesoftware.htmlunit.WebClient;
@@ -47,7 +49,8 @@ import com.gargoylesoftware.htmlunit.util.NameValuePair;
  * @version 1.1, 05/03/14
  */
 public class HTTPMethods {
-	private boolean debug = false;
+	private static Logger logger = Logger.getLogger(HTTPMethods.class);
+	
 	private List<String> cookies = new ArrayList<String>();
 	protected List<Class<?>> recognizers = null;
 	
@@ -55,8 +58,7 @@ public class HTTPMethods {
 	protected String trustStore = null;
 	protected String trustStorePassword = null;
 	
-	public HTTPMethods(boolean debug, List<Class<?>> recognizers, boolean sslCheck, String trustStore, String trustStorePassword) {
-		this.debug = debug;
+	public HTTPMethods(List<Class<?>> recognizers, boolean sslCheck, String trustStore, String trustStorePassword) {
 		this.recognizers = recognizers;
 		this.sslCheck = sslCheck;
 		this.trustStore = trustStore;
@@ -128,8 +130,8 @@ public class HTTPMethods {
 				}
 			}
 			
-			if (debug) System.err.println("Response code: " + returnedPage.getReturnCode());
-			if (debug) System.err.println("textCurWebPage.getContent(): " + textCurWebPage.getContent());
+			logger.debug("Response code: " + returnedPage.getReturnCode());
+			logger.debug("textCurWebPage.getContent(): " + textCurWebPage.getContent());
 			
 			if (returnedPage.getReturnCode() == HttpURLConnection.HTTP_OK) {
 				String[] bodyLines = textCurWebPage.getContent().split("\n");
