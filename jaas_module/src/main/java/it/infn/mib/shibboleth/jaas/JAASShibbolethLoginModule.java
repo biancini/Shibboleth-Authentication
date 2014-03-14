@@ -323,6 +323,10 @@ public class JAASShibbolethLoginModule implements LoginModule {
 		    	}
 		    }
 			
+			logger.debug("[SampleLoginModule] pre ShibbolethPrincipal");
+			logger.debug("[SampleLoginModule] username: "+username);
+			logger.debug("[SampleLoginModule] sessUsername: "+sessUsername);
+			
 		    // add a Principal (authenticated identity) to the Subject
 			if (sessUsername != null && !sessUsername.equals("")) {
 				userPrincipal = new ShibbolethPrincipal(session.get(sessUsername));

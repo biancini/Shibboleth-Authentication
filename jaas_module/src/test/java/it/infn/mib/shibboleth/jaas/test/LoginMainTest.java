@@ -34,6 +34,7 @@ import it.infn.mib.shibboleth.jaas.test.ws.CookieHandler;
 
 import java.net.URL;
 import java.security.Principal;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.security.auth.login.FailedLoginException;
@@ -191,7 +192,7 @@ public class LoginMainTest {
 	 *            No arguments to be passed
 	 * @throws LoginException
 	 *             When the login has an exception
-	 
+	 */
 	@Test
 	public void loginWithSimpleSAMLIDP() throws LoginException {
 		final URL jaasFile = getClass().getResource("/shibboleth_jaas.config");
@@ -216,7 +217,7 @@ public class LoginMainTest {
 		System.out.println("Printing session for logged in user: ");
 		for (String curKey : session.keySet())
 			System.out.println("[" + curKey + "] => " + session.get(curKey));
-	}*/
+	}
 
 	/**
 	 * Function to login a user.
@@ -255,7 +256,7 @@ public class LoginMainTest {
 	 * @return true if the user session was found in environment, false
 	 *         otherwise
 	 * 
-	 
+	 */
 	@Test
 	public void sso() {
 		String sessUsername = "eduPersonPrincipalName";
@@ -286,5 +287,5 @@ public class LoginMainTest {
 		for (String curKey : session.keySet()) {
 			System.out.println("[" + curKey + "] => " + session.get(curKey));
 		}
-	}*/
+	}
 }

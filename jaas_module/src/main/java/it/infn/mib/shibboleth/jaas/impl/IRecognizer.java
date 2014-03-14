@@ -1,5 +1,7 @@
 package it.infn.mib.shibboleth.jaas.impl;
 
+import java.io.IOException;
+
 import com.gargoylesoftware.htmlunit.Page;
 
 /**
@@ -28,7 +30,7 @@ public interface IRecognizer {
 	 * @throws HTTPException if an exception rises during page processing
 	 * @return the Page processed
 	 */
-	public Page processUrl(Page curWebPage, String username, String password, Integer selection) throws HTTPException;
+	public Page processUrl(Page curWebPage, String username, String password, Integer selection) throws HTTPException, IOException;
 	
 	/**
 	 * Function that indicates whether the recognizer chain must be continued or broken.

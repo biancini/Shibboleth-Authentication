@@ -5,6 +5,8 @@ import it.infn.mib.shibboleth.jaas.impl.IRecognizer;
 
 import java.io.IOException;
 
+import org.apache.log4j.Logger;
+
 import com.gargoylesoftware.htmlunit.Page;
 import com.gargoylesoftware.htmlunit.html.HtmlButton;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
@@ -20,6 +22,7 @@ import com.gargoylesoftware.htmlunit.html.HtmlTextInput;
  * @version 1.0, 05/03/2014
  */
 public class ShibbolethIDP implements IRecognizer {
+	private static Logger logger = Logger.getLogger(ShibbolethIDP.class);
 	
 	private static final String SHIBBOLETH_XPATH_FORM = "//form";
 	private static final String SHIBBOLETH_XPATH_BUTTON = "//button";
@@ -36,7 +39,7 @@ public class ShibbolethIDP implements IRecognizer {
 	/**
 	 * {@inheritDoc}
 	 */
-	public Page processUrl(Page curWebPage, String username, String password, Integer selection) throws HTTPException {
+	public Page processUrl(Page curWebPage, String username, String password, Integer selection) throws HTTPException, IOException {
 		if(!curWebPage.isHtmlPage()) {
 			throw new HTTPException("The page is not a HTML page");
 		}
@@ -50,14 +53,10 @@ public class ShibbolethIDP implements IRecognizer {
 		
 		usernameField.setValueAttribute(username);
 		passwordField.setValueAttribute(password);
-
-		try {
-			curWebPage = button.click();
-		} catch (IOException e) {
-			throw new HTTPException("Error during page processing", e);
-		}
+		curWebPage = button.click();
 		
 		if (curWebPage.isHtmlPage()) {
+			logger.debug("curWebPage: "+((HtmlPage) curWebPage).asXml());
 			throw new HTTPException("The page result is not a Text page");
 		}
 		

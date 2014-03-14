@@ -140,9 +140,13 @@ public class HTTPMethods {
 				}
 			}
 		} catch (Exception e) {
-			throw new HTTPException("Error during login with Shibboleth.", e);
+			logger.error("Exception", e);
 		} finally {
 			webClient.closeAllWindows();
+		}
+		
+		if(returnedPage == null) {
+			throw new HTTPException("The page has not been recognized");
 		}
 		
 		return returnedPage;
@@ -166,7 +170,7 @@ public class HTTPMethods {
 				throw new HTTPException("Initialize recognizers property");
 			}
 		} catch (Exception e) {
-			throw new HTTPException("Error during login with Shibboleth.", e);
+			logger.error("Exception", e);
 		} finally {
 			webClient.closeAllWindows();
 		}
