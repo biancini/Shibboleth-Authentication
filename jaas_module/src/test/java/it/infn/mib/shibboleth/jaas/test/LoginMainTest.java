@@ -27,16 +27,25 @@
 
 package it.infn.mib.shibboleth.jaas.test;
 
+import it.infn.mib.shibboleth.jaas.JAASShibbolethLoginModule;
+import it.infn.mib.shibboleth.jaas.ShibbolethConfigFile;
 import it.infn.mib.shibboleth.jaas.ShibbolethPrincipal;
+import it.infn.mib.shibboleth.jaas.recognizers.ShibbolethDS;
+import it.infn.mib.shibboleth.jaas.recognizers.ShibbolethIDP;
+import it.infn.mib.shibboleth.jaas.recognizers.SimpleSAMLIDP;
 import it.infn.mib.shibboleth.jaas.test.ws.BackendBindingStub;
 import it.infn.mib.shibboleth.jaas.test.ws.BackendServiceLocator;
 import it.infn.mib.shibboleth.jaas.test.ws.CookieHandler;
 
+import java.io.IOException;
 import java.net.URL;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
@@ -113,13 +122,30 @@ public class LoginMainTest {
 			loc.setEngine(new AxisClient(clientConfig));
 			binding = (BackendBindingStub) loc.getBackendPort();
 		} catch (ServiceException jre) {
-			if (jre.getLinkedCause() != null)
+			if (jre.getLinkedCause() != null) {
 				jre.getLinkedCause().printStackTrace();
+			}
 			throw new LoginException("JAX-RPC ServiceException caught: " + jre);
 		}
 
 		binding.setMaintainSession(true);
 		return binding;
+	}
+	
+	@Ignore
+	private static String join(List<String> list, String conjunction) {
+	   StringBuilder sb = new StringBuilder();
+	   boolean first = true;
+	   for (String item : list) {
+	      if (first) {
+	         first = false;
+	      }
+	      else {
+	         sb.append(conjunction);
+	      }
+	      sb.append(item);
+	   }
+	   return sb.toString();
 	}
 
 	/**
@@ -129,15 +155,38 @@ public class LoginMainTest {
 	 *            No arguments to be passed
 	 * @throws LoginException
 	 *             When the login has an exception
+	 * @throws IOException 
 	 */
 	@Test
-	public void loginWithShibbolethIDP() throws LoginException {
-		final URL jaasFile = getClass().getResource("/shibboleth_jaas.config");
-		System.setProperty(
-				"java.security.auth.login.config",
-				jaasFile.getPath());
-		LoginContext lc = new LoginContext("Shibboleth",
-				new FixedTestCallbackHandler("simon", "ciaosimon", 14));
+	public void loginWithShibbolethIDP() throws LoginException, IOException {
+		ShibbolethConfigFile configFile = new ShibbolethConfigFile();
+		
+		String moduleClass = JAASShibbolethLoginModule.class.getCanonicalName();
+		String applicationName = "Shibboleth";
+		HashMap<String, String> options = new HashMap<String, String>();
+		options.put("url", "https://sp-test1.mib.garr.it/secure/pam.php");
+		options.put("sslcheck", "false");
+		options.put("sess_username", "");
+		options.put("truststore", "");
+		options.put("truststore_password", "");
+		
+		List<String> regognizers = new ArrayList<String>();
+		regognizers.add(ShibbolethDS.class.getCanonicalName());
+		regognizers.add(ShibbolethIDP.class.getCanonicalName());
+		regognizers.add(SimpleSAMLIDP.class.getCanonicalName());
+		
+		options.put("recognizers", join(regognizers, ","));
+		
+		AppConfigurationEntry entry = new AppConfigurationEntry(
+				moduleClass, 
+				AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, 
+				options);
+		
+		configFile.appendEntry(applicationName, entry);
+		
+		LoginContext lc = new LoginContext("Shibboleth", null,
+				new FixedTestCallbackHandler("simon", "ciaosimon", 14), configFile);
+		
 		lc.login();
 
 		// Prints the session values for the logged in user
