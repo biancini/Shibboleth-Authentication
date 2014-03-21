@@ -56,7 +56,7 @@ import javax.security.auth.login.AppConfigurationEntry;
  * 
  * @see javax.security.auth.login.LoginContext
  */
-public class ShibbolethConfigFile extends
+public class SAMLConfigFile extends
 		javax.security.auth.login.Configuration {
 //	private static Logger logger = Logger.getLogger(ShibbolethConfigFile.class);
 	private HashMap<String, LinkedList<AppConfigurationEntry>> configuration;
@@ -68,7 +68,7 @@ public class ShibbolethConfigFile extends
 	 *            Create a new Configuration object from this URI.
 	 * @throws IOException
 	 */
-	public ShibbolethConfigFile() throws IOException {
+	public SAMLConfigFile() throws IOException {
 		configuration = new HashMap<String, LinkedList<AppConfigurationEntry>>();
 	}
 

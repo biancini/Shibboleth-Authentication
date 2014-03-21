@@ -64,8 +64,8 @@ import org.apache.log4j.Logger;
  * @author Simon Vocella <voxsim@gmail.com>
  * @version 1.0, 06/06/12
  */
-public class JAASShibbolethLoginModule implements LoginModule {
-	private static Logger logger = Logger.getLogger(JAASShibbolethLoginModule.class);
+public class SAMLLoginModule implements LoginModule {
+	private static Logger logger = Logger.getLogger(SAMLLoginModule.class);
 	
 	private Subject subject = null;
 	private CallbackHandler callbackHandler = null;
@@ -77,7 +77,7 @@ public class JAASShibbolethLoginModule implements LoginModule {
 	
 	private String username = null;
 	private char[] password = null;
-	private ShibbolethPrincipal userPrincipal = null;
+	private SAMLPrincipal userPrincipal = null;
 	private String sessUsername = null;
     
 	private boolean succeeded = false;
@@ -329,10 +329,10 @@ public class JAASShibbolethLoginModule implements LoginModule {
 			
 		    // add a Principal (authenticated identity) to the Subject
 			if (sessUsername != null && !sessUsername.equals("")) {
-				userPrincipal = new ShibbolethPrincipal(session.get(sessUsername));
+				userPrincipal = new SAMLPrincipal(session.get(sessUsername));
 			}
 			else {
-				userPrincipal = new ShibbolethPrincipal(username);
+				userPrincipal = new SAMLPrincipal(username);
 			}
 		    
 		    userPrincipal.setSession(session);

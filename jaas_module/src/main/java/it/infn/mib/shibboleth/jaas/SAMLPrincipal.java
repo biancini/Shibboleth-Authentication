@@ -48,7 +48,7 @@ import java.util.Map;
  * @see java.security.Principal
  * @see javax.security.auth.Subject
  */
-public class ShibbolethPrincipal implements Principal, Serializable {
+public class SAMLPrincipal implements Principal, Serializable {
 
 	private static final long serialVersionUID = 7023125781649016438L;
 	
@@ -62,7 +62,7 @@ public class ShibbolethPrincipal implements Principal, Serializable {
      *
      * @exception NullPointerException if the <code>name</code> is <code>null</code>.
      */
-    public ShibbolethPrincipal(String name) {
+    public SAMLPrincipal(String name) {
 		if (name == null) throw new NullPointerException("illegal null input");
 		this.name = name;
 		this.session = new HashMap<String, String>();
@@ -150,8 +150,8 @@ public class ShibbolethPrincipal implements Principal, Serializable {
     public boolean equals(Object o) {
     	if (o == null) return false;
         if (this == o) return true;
-        if (!(o instanceof ShibbolethPrincipal)) return false;
-        ShibbolethPrincipal that = (ShibbolethPrincipal)o;
+        if (!(o instanceof SAMLPrincipal)) return false;
+        SAMLPrincipal that = (SAMLPrincipal)o;
         if (this.getName().equals(that.getName())) return true;
         return false;
     }

@@ -27,9 +27,9 @@
 
 package it.infn.mib.shibboleth.jaas.test;
 
-import it.infn.mib.shibboleth.jaas.JAASShibbolethLoginModule;
-import it.infn.mib.shibboleth.jaas.ShibbolethConfigFile;
-import it.infn.mib.shibboleth.jaas.ShibbolethPrincipal;
+import it.infn.mib.shibboleth.jaas.SAMLLoginModule;
+import it.infn.mib.shibboleth.jaas.SAMLConfigFile;
+import it.infn.mib.shibboleth.jaas.SAMLPrincipal;
 import it.infn.mib.shibboleth.jaas.recognizers.ShibbolethDS;
 import it.infn.mib.shibboleth.jaas.recognizers.ShibbolethIDP;
 import it.infn.mib.shibboleth.jaas.recognizers.SimpleSAMLIDP;
@@ -151,20 +151,19 @@ public class LoginMainTest {
 	/**
 	 * Function to login a user.
 	 * 
-	 * @param args
-	 *            No arguments to be passed
 	 * @throws LoginException
 	 *             When the login has an exception
 	 * @throws IOException 
 	 */
 	@Test
 	public void loginWithShibbolethIDP() throws LoginException, IOException {
-		ShibbolethConfigFile configFile = new ShibbolethConfigFile();
+		SAMLConfigFile configFile = new SAMLConfigFile();
 		
-		String moduleClass = JAASShibbolethLoginModule.class.getCanonicalName();
+		String moduleClass = SAMLLoginModule.class.getCanonicalName();
 		String applicationName = "Shibboleth";
 		HashMap<String, String> options = new HashMap<String, String>();
-		options.put("url", "https://sp-test1.mib.garr.it/secure/pam.php");
+		//options.put("url", "https://sp-test1.mib.garr.it/secure/pam.php");
+		options.put("url", "https://applications.colibrinet.it/pam.php");
 		options.put("sslcheck", "false");
 		options.put("sess_username", "");
 		options.put("truststore", "");
@@ -191,9 +190,9 @@ public class LoginMainTest {
 
 		// Prints the session values for the logged in user
 		for (Principal curPrincipal : lc.getSubject().getPrincipals()) {
-			if (curPrincipal instanceof ShibbolethPrincipal) {
-				loggedUser = ((ShibbolethPrincipal) curPrincipal).getName();
-				session = ((ShibbolethPrincipal) curPrincipal).getSession();
+			if (curPrincipal instanceof SAMLPrincipal) {
+				loggedUser = ((SAMLPrincipal) curPrincipal).getName();
+				session = ((SAMLPrincipal) curPrincipal).getSession();
 			}
 		}
 
@@ -208,8 +207,6 @@ public class LoginMainTest {
 	/**
 	 * Function to login a user.
 	 * 
-	 * @param args
-	 *            No arguments to be passed
 	 * @throws LoginException
 	 *             When the login has an exception
 	 */
@@ -225,9 +222,9 @@ public class LoginMainTest {
 
 		// Prints the session values for the logged in user
 		for (Principal curPrincipal : lc.getSubject().getPrincipals()) {
-			if (curPrincipal instanceof ShibbolethPrincipal) {
-				loggedUser = ((ShibbolethPrincipal) curPrincipal).getName();
-				session = ((ShibbolethPrincipal) curPrincipal).getSession();
+			if (curPrincipal instanceof SAMLPrincipal) {
+				loggedUser = ((SAMLPrincipal) curPrincipal).getName();
+				session = ((SAMLPrincipal) curPrincipal).getSession();
 			}
 		}
 
@@ -254,9 +251,9 @@ public class LoginMainTest {
 
 		// Prints the session values for the logged in user
 		for (Principal curPrincipal : lc.getSubject().getPrincipals()) {
-			if (curPrincipal instanceof ShibbolethPrincipal) {
-				loggedUser = ((ShibbolethPrincipal) curPrincipal).getName();
-				session = ((ShibbolethPrincipal) curPrincipal).getSession();
+			if (curPrincipal instanceof SAMLPrincipal) {
+				loggedUser = ((SAMLPrincipal) curPrincipal).getName();
+				session = ((SAMLPrincipal) curPrincipal).getSession();
 			}
 		}
 
@@ -288,9 +285,9 @@ public class LoginMainTest {
 
 		// Prints the session values for the logged in user
 		for (Principal curPrincipal : lc.getSubject().getPrincipals()) {
-			if (curPrincipal instanceof ShibbolethPrincipal) {
-				loggedUser = ((ShibbolethPrincipal) curPrincipal).getName();
-				session = ((ShibbolethPrincipal) curPrincipal).getSession();
+			if (curPrincipal instanceof SAMLPrincipal) {
+				loggedUser = ((SAMLPrincipal) curPrincipal).getName();
+				session = ((SAMLPrincipal) curPrincipal).getSession();
 			}
 		}
 
