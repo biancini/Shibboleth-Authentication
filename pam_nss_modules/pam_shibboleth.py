@@ -1,23 +1,5 @@
 session = {}
 
-def get_password(pamh, params):
-  password = None
-  if "use_first_pass" in params and params["use_first_pass"]:
-    password = pamh.authtok
-    return password
-
-  if "try_first_pass" in params and params["try_first_pass"]:
-    password = pamh.authtok
-  
-  if password is None:
-    username = pamh.get_user(None)
-    msg = pamh.user_prompt
-    if msg is None: msg = "%s's password:" % username
-    res = send_msg(pamh, pamh.PAM_PROMPT_ECHO_OFF, msg)
-    password = res.resp
-
-  return password
-
 def is_shibbolethds(html_content):
   return "wayf.css" in html_content
 
@@ -28,10 +10,10 @@ def shibbolethds(pamh, br, params):
   msg = "Chose the IdP you want to use for login. Available IdPs are:\n"
   listidps = {}
   for c in br.form.find_control('origin').get_items():
-    msg = "%s%d. %s\n" % (msg, num, ' - '.join([a.text for a in c.get_labels()]))
-    listidps[num] = c.name
+    msg = "%s%d. %s\n" % (msg, num, c.name)
+    listidps[num] = c.get_labels()[0].text
     num = num+1
-  msg ="%sInsert the number of the IdP to be used: " % msg
+  msg ="%s\nInsert the number of the IdP to be used: " % msg
 
   rsp = send_msg(pamh, pamh.PAM_PROMPT_ECHO_ON, msg)
   br.form['origin'] = [listidps[int(rsp.resp)]]
@@ -42,10 +24,7 @@ def shibbolethds(pamh, br, params):
 def is_shibboleth(html_content):
   return ('j_username' in html_content and 'j_password' in html_content)
 
-def shibboleth(pamh, br, params):
-  username = pamh.get_user(None)
-  password = get_password(pamh, params)
-
+def shibboleth(pamh, br, params, username, password):
   # Submit first form with username and password provided
   br.select_form(nr=0)
   br.form['j_username'] = username
@@ -78,10 +57,7 @@ def shibboleth(pamh, br, params):
 def is_simplesaml(html_content):
   return ('id="username"' in html_content and 'id="password"' in html_content)
 
-def simplesaml(pamh, br, params):
-  username = pamh.get_user(None)
-  password = get_password(pamh, params)
-
+def simplesaml(pamh, br, params, username, password):
   # Submit first form with username and password provided
   br.select_form(nr=0)
   br.form['username'] = username
@@ -98,7 +74,7 @@ def simplesaml(pamh, br, params):
   #print html_content
   return html_content
 
-def geturl(pamh, params):
+def geturl(pamh, params, username, password):
   import mechanize
   import cookielib
   import urllib
@@ -116,6 +92,7 @@ def geturl(pamh, params):
   br.addheaders = [('User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.1) Gecko/2008071615 Fedora/3.0.1-1.fc9 Firefox/3.0.1')]
 
   # Get first url and get redirected to IdP login page
+  #print "Opening url: %s" % params['url']
   r = br.open(params['url'])
   html_content = r.read()
 
@@ -126,11 +103,11 @@ def geturl(pamh, params):
       html_content = shibbolethds(pamh, br, params)
     elif is_shibboleth(html_content):
       #print "It is a Shibboleth IdP page"
-      html_content = shibboleth(pamh, br, params)
+      html_content = shibboleth(pamh, br, params, username, password)
       continue_loop = False
     elif is_simplesaml(html_content):
       #print "It is a Simple SAML IdP page"
-      html_content = simplesaml(pamh, br, params)
+      html_content = simplesaml(pamh, br, params, username, password)
       continue_loop = False
     else:
       html_content = ""
@@ -150,7 +127,7 @@ def parse_args(pamh, argv):
   try_first_pass = False
 
   params = {}
-  params['url'] = "https://servername/secure/pam.php"
+  params['url'] = "https://sp-test1.mib.garr.it/secure/pam.php"
   params['sslcheck'] = False
   params['sess_username'] = "uid"
   params['cafile'] = ""
@@ -185,7 +162,16 @@ def pam_sm_authenticate(pamh, flags, argv):
   try:
     session = {}
     params = parse_args(pamh, argv)
-    geturl(pamh, params)
+    username = pamh.get_user(None)
+    password = None
+    if params['use_first_pass'] or params['try_first_pass']:
+      password = pamh.authtok
+      if password is None and params['use_first_pass']:
+        return pamh.PAM_AUTH_ERR
+    if password is None:
+      password = send_msg(pamh, pamh.PAM_PROMPT_ECHO_OFF, "%s's password:" % username)
+      password = password.resp
+    geturl(pamh, params, username, password)
   except pamh.exception, e:
     return e.pam_result
 
@@ -214,7 +200,7 @@ def pam_sm_chauthtok(pamh, flags, argv):
   return pamh.PAM_SYSTEM_ERR
 
 if __name__ == "__main__":
-    params = {'url': 'https://sp-servername/secure/pam.php',
+    params = {'url': 'https://sp-test1.mib.garr.it/secure/pam.php',
               'sslcheck': False,
               'sess_username': 'uid'};
     geturl(None, params, 'username', 'password')
