@@ -5,8 +5,6 @@ import it.infn.mib.shibboleth.jaas.impl.IRecognizer;
 
 import java.io.IOException;
 
-import org.apache.log4j.Logger;
-
 import com.gargoylesoftware.htmlunit.Page;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlOption;
@@ -22,8 +20,6 @@ import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
  * @version 1.0, 05/03/2014
  */
 public class ShibbolethDS implements IRecognizer {
-	private static Logger logger = Logger.getLogger(ShibbolethDS.class);
-	
 	private static final String SHIBBOLETH_XPATH_FORM = "//form";
 	private static final String SHIBBOLETH_XPATH_SUBMIT = ".//input[@type=\"submit\"]";
 	private static final String SHIBBOLETH_ORIGIN_FIELD = "origin";
@@ -32,29 +28,34 @@ public class ShibbolethDS implements IRecognizer {
 	 * {@inheritDoc}
 	 */
 	public boolean isThisUrl(String htmlCurWebPageText) {
-		return htmlCurWebPageText.contains("action=\"/dsc/DS\"");
+		return htmlCurWebPageText.contains("action=\"/discovery/DS\"");
 	}
 
 	/**
 	 * {@inheritDoc}
 	 * @throws IOException 
 	 */
-	public Page processUrl(Page curWebPage, String username, String password, Integer selection) throws HTTPException, IOException {
+	public Page processUrl(Page curWebPage, String username, String password, String entityid) throws HTTPException {
 		// TODO: This method only works when the DS is configured with provideListOfList="false"
 		if(!curWebPage.isHtmlPage()) {
 			throw new HTTPException("The page is not a HTML page");
 		}
 		
-		HtmlPage htmlCurWebPage = (HtmlPage) curWebPage;
+		try {
 		
-		final HtmlForm form = (HtmlForm) htmlCurWebPage.getByXPath(SHIBBOLETH_XPATH_FORM).get(1);
-		final HtmlSubmitInput submit = (HtmlSubmitInput) form.getFirstByXPath(SHIBBOLETH_XPATH_SUBMIT);
-		final HtmlSelect originField = form.getSelectByName(SHIBBOLETH_ORIGIN_FIELD);
-		
-		originField.setSelectedAttribute(originField.getOptions().get(selection), true);
-		curWebPage = submit.click();
-		
-		return curWebPage;
+			HtmlPage htmlCurWebPage = (HtmlPage) curWebPage;
+			
+			final HtmlForm form = (HtmlForm) htmlCurWebPage.getByXPath(SHIBBOLETH_XPATH_FORM).get(0);
+			final HtmlSubmitInput submit = (HtmlSubmitInput) form.getFirstByXPath(SHIBBOLETH_XPATH_SUBMIT);
+			final HtmlSelect originField = form.getSelectByName(SHIBBOLETH_ORIGIN_FIELD);
+			
+			originField.setSelectedAttribute(originField.getOptionByValue(entityid), true);
+			curWebPage = submit.click();
+			
+			return curWebPage;
+		} catch(Exception e) {
+			throw new HTTPException("Something going wrong", e);
+		}
 	}
 
 	/**
@@ -70,9 +71,7 @@ public class ShibbolethDS implements IRecognizer {
 	public String[] getChoices(Page curWebPage) {
 		HtmlPage htmlCurWebPage = (HtmlPage) curWebPage;
 		
-		logger.debug("htmlCurWebPage: "+htmlCurWebPage.asXml());
-		
-		final HtmlForm form = (HtmlForm) htmlCurWebPage.getByXPath(SHIBBOLETH_XPATH_FORM).get(1);
+		final HtmlForm form = (HtmlForm) htmlCurWebPage.getByXPath(SHIBBOLETH_XPATH_FORM).get(0);
 		final HtmlSelect originField = form.getSelectByName(SHIBBOLETH_ORIGIN_FIELD);
 		
 		String[] choices = new String[originField.getOptions().size()];

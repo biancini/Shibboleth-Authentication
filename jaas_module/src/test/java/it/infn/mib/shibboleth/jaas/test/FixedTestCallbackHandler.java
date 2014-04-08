@@ -31,7 +31,6 @@ import java.io.IOException;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
-import javax.security.auth.callback.ChoiceCallback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
@@ -50,12 +49,12 @@ public class FixedTestCallbackHandler implements CallbackHandler {
 	
 	private String username;
 	private String password;
-	private Integer selection;
+	private String entityid;
 	
-	public FixedTestCallbackHandler(String username, String password, Integer selection) {
+	public FixedTestCallbackHandler(String username, String password, String entityid) {
 		this.username = username;
 		this.password = password;
-		this.selection = selection;
+		this.entityid = entityid;
 	}
     
 	/**
@@ -69,10 +68,14 @@ public class FixedTestCallbackHandler implements CallbackHandler {
     	for (int i = 0; i < callbacks.length; i++) {
     		if (callbacks[i] instanceof NameCallback) {
     			((NameCallback)callbacks[i]).setName(username);
+    			if(((NameCallback) callbacks[i]).getPrompt().equals("Username: "))  {
+                    ((NameCallback) callbacks[i]).setName(username);
+                }
+                if(((NameCallback) callbacks[i]).getPrompt().equals("EntityId: "))  {
+                    ((NameCallback) callbacks[i]).setName(entityid);
+                }
     		} else if (callbacks[i] instanceof PasswordCallback) {
     			((PasswordCallback) callbacks[i]).setPassword(password.toCharArray());
-    		} else if (callbacks[i] instanceof ChoiceCallback) {
-    			((ChoiceCallback) callbacks[i]).setSelectedIndex(selection);
     		} else {
     			throw new UnsupportedCallbackException(callbacks[i], "MyCallbackHandler: Unrecognized Callback");
     		}
