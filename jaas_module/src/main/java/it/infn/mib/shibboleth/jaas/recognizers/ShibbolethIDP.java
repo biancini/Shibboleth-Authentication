@@ -3,10 +3,6 @@ package it.infn.mib.shibboleth.jaas.recognizers;
 import it.infn.mib.shibboleth.jaas.impl.HTTPException;
 import it.infn.mib.shibboleth.jaas.impl.IRecognizer;
 
-import java.io.IOException;
-
-import org.apache.log4j.Logger;
-
 import com.gargoylesoftware.htmlunit.Page;
 import com.gargoylesoftware.htmlunit.html.HtmlButton;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
@@ -22,8 +18,6 @@ import com.gargoylesoftware.htmlunit.html.HtmlTextInput;
  * @version 1.0, 05/03/2014
  */
 public class ShibbolethIDP implements IRecognizer {
-	private static Logger logger = Logger.getLogger(ShibbolethIDP.class);
-	
 	private static final String SHIBBOLETH_XPATH_FORM = "//form";
 	private static final String SHIBBOLETH_XPATH_BUTTON = "//button";
 	private static final String SHIBBOLETH_USERNAME_FIELD = "j_username";
@@ -39,28 +33,32 @@ public class ShibbolethIDP implements IRecognizer {
 	/**
 	 * {@inheritDoc}
 	 */
-	public Page processUrl(Page curWebPage, String username, String password, Integer selection) throws HTTPException, IOException {
+	public Page processUrl(Page curWebPage, String username, String password, String entityid) throws HTTPException {
 		if(!curWebPage.isHtmlPage()) {
 			throw new HTTPException("The page is not a HTML page");
 		}
 		
-		HtmlPage htmlCurWebPage = (HtmlPage) curWebPage;
-		
-		final HtmlForm form = (HtmlForm) htmlCurWebPage.getFirstByXPath(SHIBBOLETH_XPATH_FORM);
-		final HtmlButton button = (HtmlButton) form.getFirstByXPath(SHIBBOLETH_XPATH_BUTTON);
-		final HtmlTextInput usernameField = form.getInputByName(SHIBBOLETH_USERNAME_FIELD);
-		final HtmlPasswordInput passwordField = form.getInputByName(SHIBBOLETH_PASSWORD_FIELD);
-		
-		usernameField.setValueAttribute(username);
-		passwordField.setValueAttribute(password);
-		curWebPage = button.click();
-		
-		if (curWebPage.isHtmlPage()) {
-			logger.debug("curWebPage: "+((HtmlPage) curWebPage).asXml());
-			throw new HTTPException("The page result is not a Text page");
+		try
+		{
+			HtmlPage htmlCurWebPage = (HtmlPage) curWebPage;
+			
+			final HtmlForm form = (HtmlForm) htmlCurWebPage.getFirstByXPath(SHIBBOLETH_XPATH_FORM);
+			final HtmlButton button = (HtmlButton) form.getFirstByXPath(SHIBBOLETH_XPATH_BUTTON);
+			final HtmlTextInput usernameField = form.getInputByName(SHIBBOLETH_USERNAME_FIELD);
+			final HtmlPasswordInput passwordField = form.getInputByName(SHIBBOLETH_PASSWORD_FIELD);
+			
+			usernameField.setValueAttribute(username);
+			passwordField.setValueAttribute(password);
+			curWebPage = button.click();
+			
+			if (curWebPage.isHtmlPage()) {
+				throw new HTTPException("The page result is not a Text page");
+			}
+			
+			return curWebPage;
+		} catch(Exception e) {
+			throw new HTTPException("Something going wrong", e);
 		}
-		
-		return curWebPage;
 	}
 
 	/**

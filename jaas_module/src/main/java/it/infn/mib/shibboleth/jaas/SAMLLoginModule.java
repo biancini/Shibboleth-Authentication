@@ -40,10 +40,8 @@ import java.util.Map;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
-import javax.security.auth.callback.ChoiceCallback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
-import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
 import javax.security.auth.spi.LoginModule;
@@ -67,25 +65,36 @@ import org.apache.log4j.Logger;
 public class SAMLLoginModule implements LoginModule {
 	private static Logger logger = Logger.getLogger(SAMLLoginModule.class);
 	
+	// initial state
 	private Subject subject = null;
 	private CallbackHandler callbackHandler = null;
+	private Map<String, Object> sharedState;
 	
+	// configurable option
 	private String url = null;
+	protected String sessUsername = null;
 	private boolean sslCheck = false;
 	private String trustStore = null;
 	private String trustStorePassword = null;
+	private List<Class<?>> recognizers = null;
+	private boolean getFromSharedState = false;
+	private boolean shareState = false;
 	
-	private String username = null;
+	// the callback parameters
+	protected String username = null;
 	private char[] password = null;
-	private SAMLPrincipal userPrincipal = null;
-	private String sessUsername = null;
-    
+	private String entityid = null;
+	
+	// the authentication status
 	private boolean succeeded = false;
 	private boolean commitSucceeded = false;
-	private HTTPPage page = null;
 	
-	private Integer selection = null;
-	private List<Class<?>> recognizers = null;
+	protected SAMLPrincipal userPrincipal = null;
+	protected Map<String, String> session = null;
+	
+	private static final String USERNAME = "username";
+	private static final String PWD = "password";
+	private static final String ENTITYID = "entityId";
 
 	/**
 	 * Initialize this <code>LoginModule</code>.
@@ -107,6 +116,7 @@ public class SAMLLoginModule implements LoginModule {
 	public void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options) {
 		this.subject = subject;
 		this.callbackHandler = callbackHandler;
+		this.sharedState = (Map<String, Object>) sharedState;
 		
 		url = (String) options.get("url");
 		
@@ -130,10 +140,13 @@ public class SAMLLoginModule implements LoginModule {
 				try {
 					recognizers.add(Class.forName(clazz));
 				} catch (ClassNotFoundException e) {
-					new RuntimeException("Application could not be initialized.  Application recognizers could not be resolved.");
+					throw new RuntimeException("Application could not be initialized.  Application recognizers could not be resolved.");
 				}
 			}
 		}
+		
+		getFromSharedState = "true".equalsIgnoreCase((String)options.get("get_from_shared_state"));
+		shareState = "true".equalsIgnoreCase((String)options.get("share_state"));
 	}
 
 	/**
@@ -154,74 +167,84 @@ public class SAMLLoginModule implements LoginModule {
 		if (callbackHandler == null)
 		    throw new LoginException("Error: no CallbackHandler available to garner authentication information from the user");
 		
-		HTTPMethods httpMethods = new HTTPMethods(recognizers, sslCheck, trustStore, trustStorePassword);
-		List<Callback> callbacks = new ArrayList<Callback>();
-		callbacks.add(new NameCallback("Username: "));
-		callbacks.add(new PasswordCallback("Password: ", false));
-		
-		String[] choices = null;
-		try {
-			choices = httpMethods.getChoices(url, sslCheck);
-			if(choices != null) {
-				callbacks.add(new ChoiceCallback("Choice: ", choices, 0, false));
-			}
-		} catch (HTTPException e) {
-			logger.error("Unable to recognize the page.", e);
-			throw new FailedLoginException("Unable to recognize the page.");
-		}
-		
-		try {
-		    callbackHandler.handle(callbacks.toArray(new Callback[callbacks.size()]));
-		    username = ((NameCallback)callbacks.get(0)).getName();
-		    char[] tmpPassword = ((PasswordCallback)callbacks.get(1)).getPassword();
-		    if (tmpPassword == null) {
-		    	// treat a NULL password as an empty password
-		    	tmpPassword = new char[0];
-		    }
-		    password = new char[tmpPassword.length];
-		    System.arraycopy(tmpPassword, 0, password, 0, tmpPassword.length);
-		    ((PasswordCallback)callbacks.get(1)).clearPassword();
-		    
-		    if(choices != null) {
-		    	int[] selectedIndexes = ((ChoiceCallback)callbacks.get(2)).getSelectedIndexes();
-		    	selection = selectedIndexes[0];
-		    }
-		} catch (java.io.IOException ioe) {
-		    throw new LoginException(ioe.toString());
-		} catch (UnsupportedCallbackException uce) {
-		    throw new LoginException("Error: " + uce.getCallback().toString() + " not available to garner authentication information from the user");
-		}
-
-		logger.debug("[SampleLoginModule] user entered user name: " + username);
-
-		try {
-			page = httpMethods.getUrl(url, username, new String(password), selection);
-			if (page.getReturnCode() == HttpURLConnection.HTTP_OK) {
-				for (String curRow : page.getBodyRows()) {
-					if (curRow.startsWith("authenticated") && new Boolean(curRow.replace("authenticated=", "").trim()).booleanValue()) {
-						// authentication succeeded!!!
-						logger.debug("[SampleLoginModule] authentication succeeded");
-						succeeded = true;
-						return true;
+		if(promptForParameters(getFromSharedState)) {
+			logger.debug("[SAMLLoginModule] user entered username: " + username);
+	
+			try {
+				HTTPMethods httpMethods = new HTTPMethods(recognizers, sslCheck, trustStore, trustStorePassword);
+				HTTPPage page = httpMethods.getUrl(url, username, new String(password), entityid);
+				if (page.getReturnCode() == HttpURLConnection.HTTP_OK) {
+					for (String curRow : page.getBodyRows()) {
+						if (curRow.startsWith("authenticated") && new Boolean(curRow.replace("authenticated=", "").trim()).booleanValue()) {
+							// authentication succeeded!!!
+							logger.debug("[SAMLLoginModule] authentication succeeded");
+							succeeded = true;
+							
+							session = new HashMap<String, String>();
+							for (String curBodyRow : page.getBodyRows()) {
+						    	if (curBodyRow != null) {
+						    		if (curBodyRow.contains("=")) session.put(curBodyRow.substring(0, curBodyRow.indexOf("=")), curBodyRow.substring(curBodyRow.indexOf("=")+1));
+						    		else session.put(curBodyRow, "");
+						    	}
+						    }
+						}
 					}
 				}
+			} catch (HTTPException e) {
+				logger.error(e.getMessage(), e);
+				succeeded = false;
 			}
-			
-			throw new HTTPException("Returned page has return code = " + page.getReturnCode());
 		}
-		catch (HTTPException e) {
-			logger.error(e.getMessage(), e);
-			
-			// authentication failed -- clean out state
-			logger.debug("[SampleLoginModule] auth.entication failed");
-			succeeded = false;
+		
+		if(shareState) {
+			sharedState.put(USERNAME, ((Object) username));
+			sharedState.put(PWD, (Object) new String(password));
+			sharedState.put(ENTITYID, (Object) entityid);
+		}
+		
+		// authentication failed -- clean out state
+		if(!succeeded) {
+			logger.debug("[SAMLLoginModule] authentication failed");
 			username = null;
+			entityid = null;
 		    
 			for (int i = 0; i < password.length; i++) password[i] = ' ';
 			password = null;
-		    
-			throw new FailedLoginException("Unable to verify username/password.");
 		}
+		
+		return succeeded;
+	}
+	
+	private boolean promptForParameters(boolean getFromSharedState) throws LoginException {
+		if (getFromSharedState) {
+			username = (String)sharedState.get(USERNAME);
+			password = (char[])sharedState.get(PWD);
+			entityid = (String)sharedState.get(ENTITYID);
+		} else {
+			try {
+				List<Callback> callbacks = new ArrayList<Callback>();
+				callbacks.add(new NameCallback("Username: "));
+				callbacks.add(new PasswordCallback("Password: ", false));
+				callbacks.add(new NameCallback("EntityId: "));
+				
+			    callbackHandler.handle(callbacks.toArray(new Callback[callbacks.size()]));
+			    username = ((NameCallback)callbacks.get(0)).getName();
+			    char[] tmpPassword = ((PasswordCallback)callbacks.get(1)).getPassword();
+			    if (tmpPassword == null) {
+			    	// treat a NULL password as an empty password
+			    	tmpPassword = new char[0];
+			    }
+			    password = new char[tmpPassword.length];
+			    System.arraycopy(tmpPassword, 0, password, 0, tmpPassword.length);
+			    ((PasswordCallback)callbacks.get(1)).clearPassword();
+			    
+			    entityid = ((NameCallback)callbacks.get(2)).getName();
+			} catch (Exception e) {
+				return false;
+			}
+		}
+		
+		return true;
 	}
 
 	/**
@@ -239,15 +262,21 @@ public class SAMLLoginModule implements LoginModule {
 	 */
 	public boolean logout() throws LoginException {
 		subject.getPrincipals().remove(userPrincipal);
+		
+		// authentication status
 		succeeded = false;
-		succeeded = commitSucceeded;
+		commitSucceeded = false;
+		
+		// configurable options
 		username = null;
 		if (password != null) {
 		    for (int i = 0; i < password.length; i++) password[i] = ' ';
 		    password = null;
 		}
+		entityid = null;
+		
 		userPrincipal = null;
-		page = null;
+		session = null;
 		return true;
 	}
 	
@@ -274,13 +303,20 @@ public class SAMLLoginModule implements LoginModule {
 		    return false;
 		} else if (succeeded == true && commitSucceeded == false) {
 		    // login succeeded but overall authentication failed
-		    succeeded = false;
-		    username = null;
-		    if (password != null) {
-				for (int i = 0; i < password.length; i++) password[i] = ' ';
-				password = null;
-		    }
-		    userPrincipal = null;
+			
+			// authentication status
+			succeeded = false;
+			
+			// configurable options
+			username = null;
+			if (password != null) {
+			    for (int i = 0; i < password.length; i++) password[i] = ' ';
+			    password = null;
+			}
+			entityid = null;
+			
+			userPrincipal = null;
+			session = null;
 		} else {
 		    // overall authentication succeeded and commit succeeded,
 		    // but someone else's commit failed
@@ -315,17 +351,8 @@ public class SAMLLoginModule implements LoginModule {
 		if (succeeded == false) {
 		    return false;
 		} else {
-			Map<String, String> session = new HashMap<String, String>();
-			for (String curBodyRow : page.getBodyRows()) {
-		    	if (curBodyRow != null) {
-		    		if (curBodyRow.contains("=")) session.put(curBodyRow.substring(0, curBodyRow.indexOf("=")), curBodyRow.substring(curBodyRow.indexOf("=")+1));
-		    		else session.put(curBodyRow, "");
-		    	}
-		    }
-			
-			logger.debug("[SampleLoginModule] pre ShibbolethPrincipal");
-			logger.debug("[SampleLoginModule] username: "+username);
-			logger.debug("[SampleLoginModule] sessUsername: "+sessUsername);
+			logger.debug("[SAMLLoginModule] username: "+username);
+			logger.debug("[SAMLLoginModule] sessUsername: "+sessUsername);
 			
 		    // add a Principal (authenticated identity) to the Subject
 			if (sessUsername != null && !sessUsername.equals("")) {
@@ -340,13 +367,13 @@ public class SAMLLoginModule implements LoginModule {
 		    if (!subject.getPrincipals().contains(userPrincipal))
 			subject.getPrincipals().add(userPrincipal);
 
-		    logger.debug("[SampleLoginModule] added ShibbolethPrincipal to Subject.");
+		    logger.debug("[SAMLLoginModule] added ShibbolethPrincipal to Subject.");
 
 		    // in any case, clean out state
 		    username = null;
 		    for (int i = 0; i < password.length; i++) password[i] = ' ';
 		    password = null;
-		    page = null;
+		    session = null;
 
 		    commitSucceeded = true;
 		    return true;

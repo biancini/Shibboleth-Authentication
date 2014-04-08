@@ -3,8 +3,6 @@ package it.infn.mib.shibboleth.jaas.recognizers;
 import it.infn.mib.shibboleth.jaas.impl.HTTPException;
 import it.infn.mib.shibboleth.jaas.impl.IRecognizer;
 
-import java.io.IOException;
-
 import com.gargoylesoftware.htmlunit.Page;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
@@ -36,25 +34,25 @@ public class SimpleSAMLIDP implements IRecognizer {
 	/**
 	 * {@inheritDoc}
 	 */
-	public Page processUrl(Page curWebPage, String username, String password, Integer selection) throws HTTPException {
+	public Page processUrl(Page curWebPage, String username, String password, String entityid) throws HTTPException {
 		if(!curWebPage.isHtmlPage()) {
 			throw new HTTPException("The page is not a HTML page");
 		}
 		
-		HtmlPage htmlCurWebPage = (HtmlPage) curWebPage;
-		
-		final HtmlForm form = (HtmlForm) htmlCurWebPage.getFirstByXPath(SHIBBOLETH_XPATH_FORM);
-		final HtmlSubmitInput submit = (HtmlSubmitInput) form.getFirstByXPath(SHIBBOLETH_XPATH_SUBMIT);
-		final HtmlTextInput usernameField = form.getInputByName(SHIBBOLETH_USERNAME_FIELD);
-		final HtmlPasswordInput passwordField = form.getInputByName(SHIBBOLETH_PASSWORD_FIELD);
-		
-		usernameField.setValueAttribute(username);
-		passwordField.setValueAttribute(password);
-
 		try {
+			HtmlPage htmlCurWebPage = (HtmlPage) curWebPage;
+			
+			final HtmlForm form = (HtmlForm) htmlCurWebPage.getFirstByXPath(SHIBBOLETH_XPATH_FORM);
+			final HtmlSubmitInput submit = (HtmlSubmitInput) form.getFirstByXPath(SHIBBOLETH_XPATH_SUBMIT);
+			final HtmlTextInput usernameField = form.getInputByName(SHIBBOLETH_USERNAME_FIELD);
+			final HtmlPasswordInput passwordField = form.getInputByName(SHIBBOLETH_PASSWORD_FIELD);
+			
+			usernameField.setValueAttribute(username);
+			passwordField.setValueAttribute(password);
+			
 			curWebPage = submit.click();
-		} catch (IOException e) {
-			throw new HTTPException("Error during page processing", e);
+		} catch(Exception e) {
+			throw new HTTPException("Something going wrong", e);
 		}
 		
 		if (curWebPage.isHtmlPage()) {

@@ -82,7 +82,7 @@ public class HTTPMethods {
 	 * @see it.infn.mib.shibboleth.jaas.impl.HTTPPage
 	 * @see it.infn.mib.shibboleth.jaas.impl.HTTPException
 	 */
-	public HTTPPage getUrl(String urlToRead, String username, String password, int selection) throws HTTPException {
+	public HTTPPage getUrl(String urlToRead, String username, String password, String entityid) throws HTTPException {
 		HTTPPage returnedPage = null;
 		final WebClient webClient = new WebClient();
 		
@@ -100,7 +100,7 @@ public class HTTPMethods {
 						IRecognizer recognizer = (IRecognizer) clazz.newInstance();
 						if (recognizer.isThisUrl(htmlCurWebPage.asXml())) {
 							recognized = true;
-							curWebPage = recognizer.processUrl(htmlCurWebPage, username, password, selection);
+							curWebPage = recognizer.processUrl(htmlCurWebPage, username, password, entityid);
 							
 							if (!recognizer.continueTheChain()) {
 								break;
@@ -129,9 +129,6 @@ public class HTTPMethods {
 					cookies.add(curCookie);
 				}
 			}
-			
-			logger.debug("Response code: " + returnedPage.getReturnCode());
-			logger.debug("textCurWebPage.getContent(): " + textCurWebPage.getContent());
 			
 			if (returnedPage.getReturnCode() == HttpURLConnection.HTTP_OK) {
 				String[] bodyLines = textCurWebPage.getContent().split("\n");

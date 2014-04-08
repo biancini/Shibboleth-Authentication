@@ -184,7 +184,7 @@ public class LoginMainTest {
 		configFile.appendEntry(applicationName, entry);
 		
 		LoginContext lc = new LoginContext("Shibboleth", null,
-				new FixedTestCallbackHandler("simon", "ciaosimon", 14), configFile);
+				new FixedTestCallbackHandler("simon", "ciaosimon", "https://idp-test1.mib.infn.it/idp/shibboleth"), configFile);
 		
 		lc.login();
 
@@ -217,7 +217,7 @@ public class LoginMainTest {
 				"java.security.auth.login.config",
 				jaasFile.getPath());
 		LoginContext lc = new LoginContext("Shibboleth",
-				new FixedTestCallbackHandler("simon", "ciaosimon2", 14));
+				new FixedTestCallbackHandler("simon", "ciaosimon2", "https://idp-test1.mib.infn.it/idp/shibboleth"));
 		lc.login();
 
 		// Prints the session values for the logged in user
@@ -229,6 +229,65 @@ public class LoginMainTest {
 		}
 
 		System.out.println("Login User did not log in.");
+	}
+	
+	/**
+	 * Function to login a user.
+	 * 
+	 * @throws LoginException
+	 *             When the login has an exception
+	 * @throws IOException 
+	 */
+	@Test(expected = LoginException.class)
+	public void wrongEntityidWithShibbolethIDP() throws LoginException {
+		SAMLConfigFile configFile;
+		try {
+			configFile = new SAMLConfigFile();
+			
+			String moduleClass = SAMLLoginModule.class.getCanonicalName();
+			String applicationName = "Shibboleth";
+			HashMap<String, String> options = new HashMap<String, String>();
+			//options.put("url", "https://sp-test1.mib.garr.it/secure/pam.php");
+			options.put("url", "https://applications.colibrinet.it/pam.php");
+			options.put("sslcheck", "false");
+			options.put("sess_username", "eppn");
+            options.put("truststore", "");
+            options.put("truststore_password", "");
+            options.put("get_from_shared_state", "false");
+            options.put("share_state", "true");
+			
+			List<String> regognizers = new ArrayList<String>();
+			regognizers.add(ShibbolethDS.class.getCanonicalName());
+			regognizers.add(ShibbolethIDP.class.getCanonicalName());
+			regognizers.add(SimpleSAMLIDP.class.getCanonicalName());
+			
+			options.put("recognizers", join(regognizers, ","));
+			
+			AppConfigurationEntry entry = new AppConfigurationEntry(
+					moduleClass, 
+					AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, 
+					options);
+			
+			configFile.appendEntry(applicationName, entry);
+			
+			LoginContext lc = new LoginContext("Shibboleth", null,
+					new FixedTestCallbackHandler("simon", "ciaosimon", "colibri"),
+					configFile);
+			lc.login();
+
+			// Prints the session values for the logged in user
+			for (Principal curPrincipal : lc.getSubject().getPrincipals()) {
+				if (curPrincipal instanceof SAMLPrincipal) {
+					loggedUser = ((SAMLPrincipal) curPrincipal).getName();
+					session = ((SAMLPrincipal) curPrincipal).getSession();
+				}
+			}
+
+			System.out.println("Login User did not log in.");
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	/**
@@ -246,7 +305,7 @@ public class LoginMainTest {
 				"java.security.auth.login.config",
 				jaasFile.getPath());
 		LoginContext lc = new LoginContext("Shibboleth",
-				new FixedTestCallbackHandler("simon", "ciaosimon", 15));
+				new FixedTestCallbackHandler("simon", "ciaosimon", "https://idp-test1.mib.infn.it/idp/shibboleth"));
 		lc.login();
 
 		// Prints the session values for the logged in user
@@ -280,7 +339,7 @@ public class LoginMainTest {
 				"java.security.auth.login.config",
 				jaasFile.getPath());
 		LoginContext lc = new LoginContext("Shibboleth",
-				new FixedTestCallbackHandler("simon", "ciaosimon2", 15));
+				new FixedTestCallbackHandler("simon", "ciaosimon2", "https://idp-test1.mib.infn.it/idp/shibboleth"));
 		lc.login();
 
 		// Prints the session values for the logged in user
