@@ -1,4 +1,4 @@
-Shibboleth Autentication
+Shibboleth Authentication
 ========================
 
 Implementation of a series of mechanisms to authenticate users on Shibboleth from non 
