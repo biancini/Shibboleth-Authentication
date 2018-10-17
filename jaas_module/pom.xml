@@ -132,13 +132,13 @@
 		<dependency>
 			<groupId>org.apache.axis</groupId>
 			<artifactId>axis</artifactId>
-			<version>1.4</version>
+			<version>[1.4,]</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.axis</groupId>
 			<artifactId>axis-jaxrpc</artifactId>
-			<version>1.4</version>
+			<version>[1.4,)</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
